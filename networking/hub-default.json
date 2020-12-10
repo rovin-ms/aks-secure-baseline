@@ -64,16 +64,210 @@
     },
     "variables": {
         "defaultFwPipName": "[concat('pip-fw-', parameters('location'), '-default')]",
+        "bastionPipName": "[concat('pip-ab-', parameters('location'))]",
+        "bastionServiceName": "[concat('ab-', parameters('location'))]",
         "hubFwName": "[concat('fw-', parameters('location'), '-hub')]",
         "hubVNetName": "[concat('vnet-', parameters('location'), '-hub')]",
+        "bastionNetworkNsgName": "[concat('nsg-', parameters('location'), '-bastion')]",
         "hubLaName": "[concat('la-networking-hub-', parameters('location'),'-',uniqueString(resourceId('Microsoft.Network/virtualNetworks',variables('hubVnetName'))))]"
     },
     "resources": [
         {
+            "name": "[guid('a08ec900-254a-4555-9bf5-e42af04b5c5c', resourceGroup().name)]",
+            "type": "Microsoft.Authorization/policyAssignments",
+            "apiVersion": "2020-03-01",
+            "location": "global",
+            "comments": "Allowed Resources Policy applied to the hub to only allow select networking and observation resources.",
+            "properties": {
+                "displayName": "[concat('[', resourceGroup().name, '] ', reference('/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c', '2020-09-01').displayName)]",
+                "scope": "[resourceGroup().id]",
+                "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c",
+                "parameters": {
+                    "listOfResourceTypesAllowed": {
+                        "value": [
+                            "Microsoft.Network/ipGroups",
+                            "Microsoft.Network/azureFirewalls",
+                            "Microsoft.Network/networkSecurityGroups",
+                            "Microsoft.Network/networkSecurityGroups/securityRules",
+                            "Microsoft.Network/virtualNetworks",
+                            "Microsoft.Network/virtualNetworks/subnets",
+                            "Microsoft.Network/publicIpAddresses",
+                            "Microsoft.Network/bastionHosts",
+                            "Microsoft.Insights/diagnosticSettings",
+                            "Microsoft.OperationalInsights/workspaces"
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "name": "[variables('hubLaName')]",
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "apiVersion": "2015-11-01-preview",
+            "location": "[parameters('location')]",
+            "comments": "This Log Analytics workspace stores logs from the regional hub network, its spokes, and bastion.",
+            "properties": {
+                "sku": {
+                    "name": "PerGB2018"
+                },
+                "retentionInDays": 30
+            }
+        },
+        {
+            "name": "[variables('bastionNetworkNsgName')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "Wraps the AzureBastion subnet in this regional hub",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "AllowWebExperienceIn",
+                        "properties": {
+                            "description": "Allow our users in. Update this to be as restrictive as possible.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "Internet",
+                            "destinationPortRange": "443",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "AllowControlPlaneIn",
+                        "properties": {
+                            "description": "Service Requirement. Allow control plane access. Regional Tag not yet supported.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "GatewayManager",
+                            "destinationPortRange": "443",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 110,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "AllowHealthProbesIn",
+                        "properties": {
+                            "description": "Service Requirement. Allow Health Probes.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "AzureLoadBalancer",
+                            "destinationPortRange": "443",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 120,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "DenyAllIn",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 1000,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "AllowSshToVnetOut",
+                        "properties": {
+                            "description": "Allow SSH out to the VNet",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "22",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "AllowRdpToVnetOut",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "description": "Unused, but required for ARM validation.",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "3389",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 110,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "AllowControlPlaneOut",
+                        "properties": {
+                            "description": "Required for control plane outbound. Regional prefix not yet supported",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "443",
+                            "destinationAddressPrefix": "AzureCloud",
+                            "access": "Allow",
+                            "priority": 120,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "DenyAllOut",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 1000,
+                            "direction": "Outbound"
+                        }
+                    }
+                ]
+            },
+            "resources": [
+                {
+                    "name": "/Microsoft.Insights/default",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
+                        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('bastionNetworkNsgName'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
+                        "logs": [
+                            {
+                                "category": "NetworkSecurityGroupEvent",
+                                "enabled": true
+                            },
+                            {
+                                "category": "NetworkSecurityGroupRuleCounter",
+                                "enabled": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "[variables('hubVnetName')]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2019-11-01",
-            "name": "[variables('hubVnetName')]",
             "location": "[parameters('location')]",
+            "comments": "This is this region's hub network.",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('bastionNetworkNsgName'))]"
+            ],
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
@@ -84,12 +278,7 @@
                     {
                         "name": "AzureFirewallSubnet",
                         "properties": {
-                            "addressPrefix": "[parameters('azureFirewallSubnetAddressSpace')]",
-                            "serviceEndpoints": [
-                                {
-                                    "service": "Microsoft.KeyVault"
-                                }
-                            ]
+                            "addressPrefix": "[parameters('azureFirewallSubnetAddressSpace')]"
                         }
                     },
                     {
@@ -105,19 +294,44 @@
                         "properties": {
                             "addressPrefix": "[parameters('azureBastionSubnetAddressSpace')]",
                             "serviceEndpoints": [
-                            ]
+                            ],
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('bastionNetworkNsgName'))]"
+                            }
                         }
                     }
                 ],
                 "enableDdosProtection": false,
                 "enableVmProtection": false
-            }
+            },
+            "resources": [
+                {
+                    "name": "/Microsoft.Insights/default",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
+                        "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         {
-            "apiVersion": "2019-11-01",
-            "type": "Microsoft.Network/publicIpAddresses",
             "name": "[variables('defaultFwPipName')]",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2020-05-01",
             "location": "[parameters('location')]",
+            "comments": "This is the public IP for this regional hub's firewall.",
             "sku": {
                 "name": "Standard"
             },
@@ -128,10 +342,72 @@
             }
         },
         {
-            "type": "Microsoft.Network/azureFirewalls",
-            "apiVersion": "2019-11-01",
-            "name": "[variables('hubFwName')]",
+            "name": "[variables('bastionPipName')]",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2020-05-01",
             "location": "[parameters('location')]",
+            "comments": "This is the public IP for this regional hub's Azure Bastion service.",
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "idleTimeoutInMinutes": 4,
+                "publicIPAddressVersion": "IPv4"
+            }
+        },
+        {
+            "name": "[variables('bastionServiceName')]",
+            "type": "Microsoft.Network/bastionHosts",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "This is this regional hub's Azure Bastion service.",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIpAddresses', variables('bastionPipName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "hub-subnet",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('hubVnetName'), 'AzureBastionSubnet')]"
+                            },
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('bastionPipName'))]"
+                            }
+                        }
+                    }
+                ]
+            },
+            "resources": [
+                {
+                    "name": "/Microsoft.Insights/default",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/bastionHosts', variables('bastionServiceName'))]",
+                        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
+                        "logs": [
+                            {
+                                "category": "BastionAuditLogs",
+                                "enabled": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "[variables('hubFwName')]",
+            "type": "Microsoft.Network/azureFirewalls",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "This is the regional azure firewall that all regional spoke networks egress through.",
             "zones": [
                 "1",
                 "2",
@@ -142,6 +418,9 @@
                 "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]"
             ],
             "properties": {
+                "additionalProperties": {
+                    "Network.DNS.EnableProxy": "false"
+                },
                 "sku": {
                     "name": "AZFW_VNet",
                     "tier": "Standard"
@@ -222,70 +501,39 @@
                         }
                     }
                 ],
-                "applicationRuleCollections": [
-
-                ]
-            }
-        },
-        {
-            "type": "Microsoft.OperationalInsights/workspaces",
-            "apiVersion": "2015-11-01-preview",
-            "name": "[variables('hubLaName')]",
-            "location": "[parameters('location')]",
-            "properties": {
-                "sku": {
-                    "name": "PerGB2018"
-                },
-                "retentionInDays": 30
-            }
-        },
-        {
-            "type": "Microsoft.Network/azureFirewalls/providers/diagnosticSettings",
-            "apiVersion": "2017-05-01-preview",
-            "name": "[concat(variables('hubFwName'), '/Microsoft.Insights/default')]",
-            "location": "[parameters('location')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
-                "[resourceId('Microsoft.Network/azureFirewalls', variables('hubFwName'))]"
-            ],
-            "properties": {
-                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
-                "logs": [
-                    {
-                        "category": "AzureFirewallApplicationRule",
-                        "enabled": true
-                    },
-                    {
-                        "category": "AzureFirewallNetworkRule",
-                        "enabled": true
+                "applicationRuleCollections": []
+            },
+            "resources": [
+                {
+                    "name": "/Microsoft.Insights/default",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
+                        "[resourceId('Microsoft.Network/azureFirewalls', variables('hubFwName'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
+                        "logs": [
+                            {
+                                "category": "AzureFirewallApplicationRule",
+                                "enabled": true
+                            },
+                            {
+                                "category": "AzureFirewallNetworkRule",
+                                "enabled": true
+                            }
+                        ],
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true
+                            }
+                        ]
                     }
-                ],
-                "metrics": [
-                    {
-                        "category": "AllMetrics",
-                        "enabled": true
-                    }
-                ]
-            }
-        },
-        {
-            "type": "Microsoft.Network/virtualNetworks/providers/diagnosticSettings",
-            "apiVersion": "2017-05-01-preview",
-            "name": "[concat(variables('hubVnetName'), '/Microsoft.Insights/default')]",
-            "location": "[parameters('location')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
-                "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]"
-            ],
-            "properties": {
-                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
-                "metrics": [
-                    {
-                        "category": "AllMetrics",
-                        "enabled": true
-                    }
-                ]
-            }
+                }
+            ]
         }
     ],
     "outputs": {

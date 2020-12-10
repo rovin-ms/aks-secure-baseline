@@ -66,13 +66,76 @@
             }
         },
         {
+            "name": "[concat('nsg-', variables('clusterVNetName'), '-management-ops')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "NSG blocking all inbound traffic other than port 22 for jump box access.",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "AllowSshInFromBastion",
+                        "properties": {
+                            "description": "Allow our Azure Bastion users in.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "[reference(resourceId(variables('hubRgName'), 'Microsoft.Network/virtualNetworks/subnets', variables('hubNetworkName'), 'AzureBastionSubnet'), '2020-05-01').addressPrefix]",
+                            "destinationPortRange": "22",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "DenyAllIn",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 1000,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            },
+            "resources": [
+                {
+                    "name": "/Microsoft.Insights/toHub",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
+                        "logs": [
+                            {
+                                "category": "NetworkSecurityGroupEvent",
+                                "enabled": true
+                            },
+                            {
+                                "category": "NetworkSecurityGroupRuleCounter",
+                                "enabled": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
             "name": "[variables('clusterVNetName')]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2020-05-01",
             "location": "[parameters('location')]",
             "comments": "65,536 (-reserved) IPs available to the workload, split across four subnets for AKS, one for App Gateway, and two for management.",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
             ],
             "properties": {
                 "addressSpace": {
@@ -138,6 +201,9 @@
                             "addressPrefix": "10.240.1.0/26",
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                            },
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
                             }
                         }
                     },

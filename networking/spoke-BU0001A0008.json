@@ -41,14 +41,17 @@
         "hubNetworkName": "[split(parameters('hubVnetResourceId'),'/')[8]]",
 
         "acrPrivateDnsZonesName": "privatelink.azurecr.io",
-        "akvPrivateDnsZonesName": "privatelink.vaultcore.azure.net"
+        "akvPrivateDnsZonesName": "privatelink.vaultcore.azure.net",
+
+        "primaryClusterPipName": "[concat('pip-', variables('orgAppId'), '-00')]"
     },
     "resources": [
         {
-            "type": "Microsoft.Network/routeTables",
-            "apiVersion": "2019-11-01",
-            "location": "[parameters('location')]",
             "name": "[variables('routeTableName')]",
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "NextHop to Hub",
             "properties": {
                 "routes": [
                     {
@@ -63,10 +66,11 @@
             }
         },
         {
-            "type": "Microsoft.Network/virtualNetworks",
-            "apiVersion": "2019-11-01",
             "name": "[variables('clusterVNetName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-05-01",
             "location": "[parameters('location')]",
+            "comments": "65,536 (-reserved) IPs available to the workload, split across four subnets for AKS, one for App Gateway, and two for management.",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
             ],
@@ -78,9 +82,9 @@
                 },
                 "subnets": [
                     {
-                        "name": "snet-clusternodes",
+                        "name": "snet-cluster-systemnodepool",
                         "properties": {
-                            "addressPrefix": "10.240.0.0/22",
+                            "addressPrefix": "10.240.8.0/22",
                             "serviceEndpoints": [
                             ],
                             "routeTable": {
@@ -91,7 +95,33 @@
                         }
                     },
                     {
-                        "name": "snet-clusteringressservices",
+                        "name": "snet-cluster-inscopenodepools",
+                        "properties": {
+                            "addressPrefix": "10.240.12.0/22",
+                            "serviceEndpoints": [
+                            ],
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                            },
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    },
+                    {
+                        "name": "snet-cluster-outofscopenodepools",
+                        "properties": {
+                            "addressPrefix": "10.240.16.0/22",
+                            "serviceEndpoints": [
+                            ],
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                            },
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    },
+                    {
+                        "name": "snet-cluster-ingressservices",
                         "properties": {
                             "addressPrefix": "10.240.4.0/28"
                         }
@@ -101,6 +131,24 @@
                         "properties": {
                             "addressPrefix": "10.240.4.16/28"
                         }
+                    },
+                    {
+                        "name": "snet-management-ops",
+                        "properties": {
+                            "addressPrefix": "10.240.1.0/26",
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "snet-management-agents",
+                        "properties": {
+                            "addressPrefix": "10.240.1.64/26",
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                            }
+                        }
                     }
                 ],
                 "enableDdosProtection": false,
@@ -108,9 +156,9 @@
             },
             "resources": [
                 {
-                    "type": "virtualNetworkPeerings",
-                    "apiVersion": "2019-11-01",
                     "name": "[concat('spoke-to-', variables('hubNetworkName'))]",
+                    "type": "virtualNetworkPeerings",
+                    "apiVersion": "2020-05-01",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
                     ],
@@ -123,45 +171,45 @@
                         "allowGatewayTransit": false,
                         "useRemoteGateways": false
                     }
+                },
+                {
+                    "name": "/Microsoft.Insights/toHub",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true
+                            }
+                        ]
+                    }
                 }
             ]
         },
         {
-            "type": "Microsoft.Network/virtualNetworks/providers/diagnosticSettings",
-            "apiVersion": "2017-05-01-preview",
-            "name": "[concat(variables('clusterVNetName'), '/Microsoft.Insights/toHub')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
-            ],
-            "properties": {
-                "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location,'-',uniqueString(parameters('hubVnetResourceId'))))]",
-                "metrics": [
-                    {
-                        "category": "AllMetrics",
-                        "enabled": true
-                    }
-                ]
-            }
-        },
-        {
-            "type": "Microsoft.Resources/deployments",
             "name": "[concat('CreateHubToSpokePeer')]",
-            "apiVersion": "2017-05-10",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-06-01",
             "resourceGroup": "[variables('hubRgName')]",
+            "comments": "Sub incremental deployment to perform hub-to-spoke peering",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
             ],
             "properties": {
                 "mode": "Incremental",
                 "template": {
-                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
                     "contentVersion": "1.0.0.0",
                     "resources": [
                         {
-                            "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
-                            "apiVersion": "2019-11-01",
                             "name": "[concat(variables('hubNetworkName'), '/hub-to-', variables('clusterVNetName'))]",
-                            "location": "[reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location]",
+                            "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+                            "apiVersion": "2020-05-01",
                             "properties": {
                                 "remoteVirtualNetwork": {
                                     "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
@@ -177,58 +225,65 @@
             }
         },
         {
-            "type": "Microsoft.Network/privateDnsZones",
-            "apiVersion": "2018-09-01",
             "name": "[variables('acrPrivateDnsZonesName')]",
-            "location": "global",
-            "properties": {
-            }
-        },
-        {
             "type": "Microsoft.Network/privateDnsZones",
             "apiVersion": "2018-09-01",
+            "location": "global",
+            "comments": "Enabling Azure Container Registry Private Link on vnet.",
+            "properties": {},
+            "resources": [
+                {
+                    "name": "[uniqueString(resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName')))]",
+                    "type": "virtualNetworkLinks",
+                    "apiVersion": "2018-09-01",
+                    "location": "global",
+                    "comments": "Enabling Azure Container Registry Private Link on cluster vnet.",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]",
+                        "[resourceId('Microsoft.Network/privateDnsZones', variables('acrPrivateDnsZonesName'))]"
+                    ],
+                    "properties": {
+                        "virtualNetwork": {
+                            "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
+                        },
+                        "registrationEnabled": false
+                    }
+                }
+            ]
+        },
+        {
             "name": "[variables('akvPrivateDnsZonesName')]",
-            "location": "global",
-            "properties": {
-            }
-        },
-        {
-            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+            "type": "Microsoft.Network/privateDnsZones",
             "apiVersion": "2018-09-01",
-            "name": "[concat(variables('acrPrivateDnsZonesName'), '/', uniqueString(resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))))]",
             "location": "global",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]",
-                "[resourceId('Microsoft.Network/privateDnsZones', variables('acrPrivateDnsZonesName'))]"
-            ],
-            "properties": {
-                "virtualNetwork": {
-                    "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
-                },
-                "registrationEnabled": false
-            }
+            "comments": "Enabling Azure Key Vault Private Link support.",
+            "properties": {},
+            "resources": [
+                {
+                    "name": "[uniqueString(resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName')))]",
+                    "type": "virtualNetworkLinks",
+                    "apiVersion": "2018-09-01",
+                    "location": "global",
+                    "comments": "Enabling Azure Key Vault Private Link on cluster vnet.",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]",
+                        "[resourceId('Microsoft.Network/privateDnsZones', variables('akvPrivateDnsZonesName'))]"
+                    ],
+                    "properties": {
+                        "virtualNetwork": {
+                            "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
+                        },
+                        "registrationEnabled": false
+                    }
+                }
+            ]
         },
         {
-            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
-            "apiVersion": "2018-09-01",
-            "name": "[concat(variables('akvPrivateDnsZonesName'), '/', uniqueString(resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))))]",
-            "location": "global",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]",
-                "[resourceId('Microsoft.Network/privateDnsZones', variables('akvPrivateDnsZonesName'))]"
-            ],
-            "properties": {
-                "virtualNetwork": {
-                    "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
-                },
-                "registrationEnabled": false
-            }
-        },
-        {
-            "apiVersion": "2019-11-01",
+            "name": "[variables('primaryClusterPipName')]",
             "type": "Microsoft.Network/publicIpAddresses",
-            "name": "[concat('pip-', variables('orgAppId'), '-00')]",
+            "apiVersion": "2019-11-01",
             "location": "[parameters('location')]",
+            "comments": "Used as primary entry point for workload. Expected to be assigned to an AAG.",
             "sku": {
                 "name": "Standard"
             },
@@ -245,11 +300,14 @@
             "type": "string"
         },
         "nodepoolSubnetResourceIds": {
-            "value": "[createArray(resourceId('Microsoft.Network/virtualNetworks/subnets', variables('clusterVNetName'), 'snet-clusternodes'))]",
+            "value": "[createArray(
+                        resourceId('Microsoft.Network/virtualNetworks/subnets', variables('clusterVNetName'), 'snet-cluster-systemnodepool'),
+                        resourceId('Microsoft.Network/virtualNetworks/subnets', variables('clusterVNetName'), 'snet-cluster-inscopenodepools'),
+                        resourceId('Microsoft.Network/virtualNetworks/subnets', variables('clusterVNetName'), 'snet-cluster-outofscopenodepools'))]",
             "type": "array"
         },
         "appGwPublicIpAddress": {
-            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', concat('pip-', variables('orgAppId'), '-00'))).ipAddress]",
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('primaryClusterPipName'))).ipAddress]",
             "type": "string"
         }
     }

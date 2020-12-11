@@ -41,7 +41,7 @@ The prerequisites for the [AKS secure baseline cluster](./) are now completed wi
    > In addition to the eastus2 regional hub (that you're deploying) you can assume there are similar deployed as well in in other Azure regions in this resource group.
 
    ```bash
-   # [This takes about five minutes to run.]
+   # [This takes about six minutes to run.]
    az deployment group create --resource-group rg-enterprise-networking-hubs --template-file networking/hub-default.json --parameters location=eastus2
    ```
 

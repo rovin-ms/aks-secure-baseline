@@ -47,6 +47,32 @@
     },
     "resources": [
         {
+            "name": "[guid('a08ec900-254a-4555-9bf5-e42af04b5c5c', resourceGroup().name)]",
+            "type": "Microsoft.Authorization/policyAssignments",
+            "apiVersion": "2020-03-01",
+            "location": "global",
+            "comments": "Allowed Resources Policy applied to the spoke resource group to only allow select networking resources.",
+            "properties": {
+                "displayName": "[concat('[', resourceGroup().name, '] ', reference('/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c', '2020-09-01').displayName)]",
+                "scope": "[resourceGroup().id]",
+                "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c",
+                "parameters": {
+                    "listOfResourceTypesAllowed": {
+                        "value": [
+                            "Microsoft.Network/routeTables",
+                            "Microsoft.Network/networkSecurityGroups",
+                            "Microsoft.Network/virtualNetworks",
+                            "Microsoft.Network/virtualNetworks/subnets",
+                            "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+                            "Microsoft.Network/privateDnsZones",
+                            "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+                            "Microsoft.Network/publicIpAddresses"
+                        ]
+                    }
+                }
+            }
+        },
+        {
             "name": "[variables('routeTableName')]",
             "type": "Microsoft.Network/routeTables",
             "apiVersion": "2020-05-01",
@@ -110,6 +136,97 @@
                     "location": "[parameters('location')]",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
+                        "logs": [
+                            {
+                                "category": "NetworkSecurityGroupEvent",
+                                "enabled": true
+                            },
+                            {
+                                "category": "NetworkSecurityGroupRuleCounter",
+                                "enabled": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "[concat('nsg-', variables('clusterVNetName'), '-TODO')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "NSG on the Node Pool and Ingress subnet - TODO FIX THIS.",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "AllowFromAny",
+                        "properties": {
+                            "description": "Everyone in the pool!",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "DenyFromEvery",
+                        "properties": {
+                            "description": "Everyone out!",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 1000,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "AllowToAny",
+                        "properties": {
+                            "description": "Everyone can talk to anything!",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "DenyToAll",
+                        "properties": {
+                            "description": "No more talking",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 1000,
+                            "direction": "Outbound"
+                        }
+                    }
+                ]
+            },
+            "resources": [
+                {
+                    "name": "/Microsoft.Insights/toHub",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
                     ],
                     "properties": {
                         "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
@@ -238,10 +355,11 @@
                         "name": "snet-cluster-systemnodepool",
                         "properties": {
                             "addressPrefix": "10.240.8.0/22",
-                            "serviceEndpoints": [
-                            ],
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                            },
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
                             },
                             "privateEndpointNetworkPolicies": "Disabled",
                             "privateLinkServiceNetworkPolicies": "Enabled"
@@ -251,8 +369,9 @@
                         "name": "snet-cluster-inscopenodepools",
                         "properties": {
                             "addressPrefix": "10.240.12.0/22",
-                            "serviceEndpoints": [
-                            ],
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                            },
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
                             },
@@ -264,8 +383,9 @@
                         "name": "snet-cluster-outofscopenodepools",
                         "properties": {
                             "addressPrefix": "10.240.16.0/22",
-                            "serviceEndpoints": [
-                            ],
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                            },
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
                             },
@@ -276,7 +396,10 @@
                     {
                         "name": "snet-cluster-ingressservices",
                         "properties": {
-                            "addressPrefix": "10.240.4.0/28"
+                            "addressPrefix": "10.240.4.0/28",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                            }
                         }
                     },
                     {
@@ -306,6 +429,9 @@
                             "addressPrefix": "10.240.1.64/26",
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                            },
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
                             }
                         }
                     }

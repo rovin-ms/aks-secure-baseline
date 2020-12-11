@@ -91,6 +91,7 @@
                             "Microsoft.Network/networkSecurityGroups/securityRules",
                             "Microsoft.Network/virtualNetworks",
                             "Microsoft.Network/virtualNetworks/subnets",
+                            "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
                             "Microsoft.Network/publicIpAddresses",
                             "Microsoft.Network/bastionHosts",
                             "Microsoft.Insights/diagnosticSettings",

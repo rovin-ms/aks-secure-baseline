@@ -1015,7 +1015,7 @@
         },
         {
             "type": "Microsoft.ContainerService/managedClusters",
-            "apiVersion": "2020-09-01",
+            "apiVersion": "2020-11-01",
             "name": "[variables('clusterName')]",
             "location": "[parameters('location')]",
             "dependsOn": [
@@ -1193,6 +1193,9 @@
                 "apiServerAccessProfile": {
                     "authorizedIPRanges": "[parameters('clusterAuthorizedIPRanges')]",
                     "enablePrivateCluster": false
+                },
+                "podIdentityProfile": { 
+                    "enabled": true
                 }
             },
             "identity": {

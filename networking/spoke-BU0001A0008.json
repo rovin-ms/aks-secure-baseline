@@ -270,13 +270,27 @@
                         "name": "AllowFromControlPlane",
                         "properties": {
                             "description": "Allow Azure Control Plane in. (https://docs.microsoft.com/azure/application-gateway/configuration-infrastructure#network-security-groups)",
-                            "protocol": "Tcp",
+                            "protocol": "*",
                             "sourcePortRange": "*",
                             "sourceAddressPrefix": "GatewayManager",
                             "destinationPortRange": "65200-65535",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 110,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "AllowFromControlPlaneInetTemp",
+                        "properties": {
+                            "description": "Allow Azure Control Plane in. (https://docs.microsoft.com/azure/application-gateway/configuration-infrastructure#network-security-groups)",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "65200-65535",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 115,
                             "direction": "Inbound"
                         }
                     },
@@ -305,6 +319,19 @@
                             "access": "Deny",
                             "priority": 1000,
                             "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "AllowAllOut",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1000,
+                            "direction": "Outbound"
                         }
                     }
                 ]

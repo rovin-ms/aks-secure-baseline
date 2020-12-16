@@ -10,10 +10,11 @@
         "policyDefinitionName-EnableAcrDefender": "[guid(subscription().id, 'EnableDefenderForAcr')]",
         "policyDefinitionName-EnableAkvDefender": "[guid(subscription().id, 'EnableDefenderForAkv')]",
         "policySetDefinitionName-EnableDefender": "[guid(subscription().id, 'EnableDefender')]",
-        "roleId-SecurityAdmin": "/providers/Microsoft.Authorization/roleDefinitions/fb1c8493-542b-48eb-b624-b4c8fea62acd"
+        "roleId-SecurityAdmin": "/providers/Microsoft.Authorization/roleDefinitions/fb1c8493-542b-48eb-b624-b4c8fea62acd",
+        "deploymentResourceRegion": "centralus" // This region is used as the default for all generic resource groups and for any additional deployment resources. No resources are actually deployed to this resource group.
     },
     "parameters": {
-        "enableAzureDefenderAutoDeployPolicies": {
+        "enforceAzureDefenderAutoDeployPolicies": {
             "type": "bool",
             "defaultValue": true,
             "metadata": {
@@ -33,14 +34,14 @@
             "name": "[variables('rgName-Hubs')]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2020-10-01",
-            "location": "centralus",
+            "location": "[variables('deploymentResourceRegion')]",
             "comments": "This contains all of our regional hubs. Typically this would be found in your enterprise's Connectivity subscription."
         },
         {
             "name": "[variables('rgName-Spokes')]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2020-10-01",
-            "location": "centralus",
+            "location": "[variables('deploymentResourceRegion')]",
             "comments": "This contains all of our regional spokes. Typically this would be found in your enterprise's Connectivity subscription or in the workload subscriptions."
         },
         {
@@ -48,7 +49,7 @@
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2020-10-01",
             "location": "eastus",
-            "comments": "This is the resource group for BU-TODO. Typically this would be found in your workload's subscription."
+            "comments": "This is the resource group for BU001a0008. Typically this would be found in your workload's subscription."
         },
         {
             "name": "[variables('policyDefinitionName-EnableAksDefender')]",
@@ -88,7 +89,7 @@
                                 "equals": "Standard"
                             },
                             "deployment": {
-                                "location": "centralus",
+                                "location": "[variables('deploymentResourceRegion')]",
                                 "properties": {
                                     "mode": "incremental",
                                     "parameters": {},
@@ -151,7 +152,7 @@
                                 "equals": "Standard"
                             },
                             "deployment": {
-                                "location": "centralus",
+                                "location": "[variables('deploymentResourceRegion')]",
                                 "properties": {
                                     "mode": "incremental",
                                     "parameters": {},
@@ -203,7 +204,7 @@
                         "effect": "deployIfNotExists",
                         "details": {
                             "type": "Microsoft.Security/pricings",
-                            "name": "KeyVault",
+                            "name": "KeyVaults",
                             "deploymentScope": "subscription",
                             "existenceScope": "subscription",
                             "roleDefinitionIds": [
@@ -214,7 +215,7 @@
                                 "equals": "Standard"
                             },
                             "deployment": {
-                                "location": "centralus",
+                                "location": "[variables('deploymentResourceRegion')]",
                                 "properties": {
                                     "mode": "incremental",
                                     "parameters": {},
@@ -223,10 +224,9 @@
                                         "contentVersion": "1.0.0.0",
                                         "resources": [
                                             {
-                                                "name": "KeyVault",
+                                                "name": "KeyVaults",
                                                 "type": "Microsoft.Security/pricings",
                                                 "apiVersion": "2018-06-01",
-                                                "location": "global",
                                                 "properties":{
                                                     "pricingTier": "Standard"
                                                 }
@@ -367,7 +367,7 @@
             "name": "[guid(variables('policySetDefinitionName-EnableDefender'), subscription().id)]",
             "type": "Microsoft.Authorization/policyAssignments",
             "apiVersion": "2019-09-01",
-            "location": "centralus",
+            "location": "[variables('deploymentResourceRegion')]",
             "dependsOn": [
                 "[subscriptionResourceId('Microsoft.Authorization/policySetDefinitions', variables('policySetDefinitionName-EnableDefender'))]"
             ],
@@ -378,7 +378,7 @@
             "properties": {
                 "displayName": "[reference(subscriptionResourceId('Microsoft.Authorization/policySetDefinitions', variables('policySetDefinitionName-EnableDefender')), '2020-09-01').displayName]",
                 "description": "Ensures that Azure Defender for Kuberentes Service, Container Service, and Key Vault are enabled.",
-                "enforcementMode": "[if(parameters('enableAzureDefenderAutoDeployPolicies'), 'Default', 'DoNotEnforce')]",
+                "enforcementMode": "[if(parameters('enforceAzureDefenderAutoDeployPolicies'), 'Default', 'DoNotEnforce')]",
                 "metadata": {
                     "version": "1.0.0",
                     "category": "Security Center"
@@ -391,10 +391,9 @@
         },
         {
             "condition": "[parameters('enableAzureDefender')]",
-            "name": "KeyVault",
+            "name": "KeyVaults",
             "type": "Microsoft.Security/pricings",
             "apiVersion": "2018-06-01",
-            "location": "global",
             "comments": "Enable Azure Defender Standard for Key Vault. Requires Owner or Security Admin role.",
             "properties":{
                 "pricingTier": "Standard"
@@ -405,7 +404,6 @@
             "name": "ContainerRegistry",
             "type": "Microsoft.Security/pricings",
             "apiVersion": "2018-06-01",
-            "location": "global",
             "comments": "Enable Azure Defender Standard for Container Registry. Requires Owner or Security Admin role.",
             "properties":{
                 "pricingTier": "Standard"
@@ -416,7 +414,6 @@
             "name": "KubernetesService",
             "type": "Microsoft.Security/pricings",
             "apiVersion": "2018-06-01",
-            "location": "global",
             "comments": "Enable Azure Defender Standard for Kubernetes Service. Requires Owner or Security Admin role.",
             "properties":{
                 "pricingTier": "Standard"

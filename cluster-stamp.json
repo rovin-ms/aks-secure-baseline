@@ -112,6 +112,8 @@
         "clusterName": "[concat('aks-', variables('subRgUniqueString'))]",
         "logAnalyticsWorkspaceName": "[concat('la-', variables('clusterName'))]",
         "containerInsightsSolutionName": "[concat('ContainerInsights(', variables('logAnalyticsWorkspaceName'),')')]",
+        "updatesSolutionName": "[concat('Updates(', variables('logAnalyticsWorkspaceName'),')')]",
+        "changeTrackingSolutionName": "[concat('ChangeTracking(', variables('logAnalyticsWorkspaceName'), ')')]",
         "defaultAcrName": "[concat('acraks', variables('subRgUniqueString'))]",
 
         "vNetResourceGroup": "[split(parameters('targetVnetResourceId'),'/')[4]]",
@@ -126,6 +128,23 @@
         "keyVaultName": "[concat( 'kv-', variables('clusterName'))]"
     },
     "resources": [
+        /*{
+            "name": "[guid('3c1b3629-c8f8-4bf6-862c-037cb9094038', resourceGroup().name)]",
+            "type": "Microsoft.Authorization/policyAssignments",
+            "apiVersion": "2020-03-01",
+            "location": "global",
+            "comments": "TODO: Change this. TODO: Move to a subscription deployment",
+            "properties": {
+                "displayName": "[concat('[', variables('nodeResourceGroupName'), '] ', reference('/providers/Microsoft.Authorization/policyDefinitions/3c1b3629-c8f8-4bf6-862c-037cb9094038', '2020-09-01').displayName)]",
+                "scope": "[concat(subscription().id, '/resourceGroups/', variables('nodeResourceGroupName'))]",
+                "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/3c1b3629-c8f8-4bf6-862c-037cb9094038",
+                "parameters": {
+                    "logAnalytics": {
+                        "value": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourcegroups/rg-secureops/providers/microsoft.operationalinsights/workspaces/la-sc-agentlogs-ckittel01"
+                    }
+                }
+            }
+        },*/
         /*{
             "name": "[concat('mi-', variables('clusterName'), '-controlplane')]",
             "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
@@ -795,13 +814,15 @@
         {
             "name": "[variables('logAnalyticsWorkspaceName')]",
             "type": "Microsoft.OperationalInsights/workspaces",
-            "apiVersion": "2015-11-01-preview",
+            "apiVersion": "2020-08-01",
             "location": "[parameters('location')]",
             "properties": {
                 "sku": {
                     "name": "PerGB2018"
                 },
-                "retentionInDays": 30
+                "retentionInDays": 30,
+                "publicNetworkAccessForIngestion": "Enabled", // TODO: Consider private link here (for those logs that can support it)
+                "publicNetworkAccessForQuery": "Enabled"
             },
             "resources": [
                 {
@@ -873,13 +894,13 @@
                 },
                 "action": {
                     "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.Microsoft.AppInsights.Nexus.DataContracts.Resources.ScheduledQueryRules.AlertingAction",
-                    "severity": "3",
+                    "severity": 3,
                     "trigger": {
                         "thresholdOperator": "GreaterThan",
-                        "threshold": "3",
+                        "threshold": 3,
                         "metricTrigger": {
                             "thresholdOperator": "GreaterThan",
-                            "threshold": "2",
+                            "threshold": 2,
                             "metricTriggerType": "Consecutive"
                         }
                     }
@@ -933,6 +954,114 @@
                 "publisher": "Microsoft"
             }
         },
+        /*{
+            "apiVersion": "2015-11-01-preview",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "name": "[variables('changeTrackingSolutionName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            ],
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            },
+            "plan": {
+                "name": "[variables('changeTrackingSolutionName')]",
+                "product": "OMSGallery/ChangeTracking",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+            }
+        },*/
+        {
+            "apiVersion": "2015-11-01-preview",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "name": "[concat('AzureAppGatewayAnalytics(', variables('logAnalyticsWorkspaceName'),')')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            ],
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            },
+            "plan": {
+                "name": "[concat('AzureAppGatewayAnalytics(', variables('logAnalyticsWorkspaceName'),')')]",
+                "product": "OMSGallery/AzureAppGatewayAnalytics",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+            }
+        },
+        /*{
+            "apiVersion": "2015-11-01-preview",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "name": "[concat('Security(', variables('logAnalyticsWorkspaceName'),')')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            ],
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            },
+            "plan": {
+                "name": "[concat('Security(', variables('logAnalyticsWorkspaceName'),')')]",
+                "product": "OMSGallery/Security",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+            }
+        },*/
+        {
+            "apiVersion": "2015-11-01-preview",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "name": "[concat('KeyVaultAnalytics(', variables('logAnalyticsWorkspaceName'),')')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            ],
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            },
+            "plan": {
+                "name": "[concat('KeyVaultAnalytics(', variables('logAnalyticsWorkspaceName'),')')]",
+                "product": "OMSGallery/KeyVaultAnalytics",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+            }
+        },
+        /*{
+            "apiVersion": "2015-11-01-preview",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "name": "[concat('AntiMalware(', variables('logAnalyticsWorkspaceName'),')')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            ],
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            },
+            "plan": {
+                "name": "[concat('AntiMalware(', variables('logAnalyticsWorkspaceName'),')')]",
+                "product": "OMSGallery/AntiMalware",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+            }
+        },*/
+        /*{
+            "apiVersion": "2015-11-01-preview",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "name": "[variables('updatesSolutionName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            ],
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            },
+            "plan": {
+                "name": "[variables('updatesSolutionName')]",
+                "product": "OMSGallery/Updates",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+            }
+        },*/
         {
             "type": "Microsoft.ContainerRegistry/registries",
             "apiVersion": "2019-05-01",
@@ -1026,7 +1155,6 @@
             "name": "[variables('clusterName')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]",
                 "[resourceId('Microsoft.OperationsManagement/solutions', variables('containerInsightsSolutionName'))]"/*,
                 "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))]",
                 "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities/providers/roleAssignments', 'podmi-ingress-controller', 'Microsoft.Authorization', guid(resourceGroup().id, variables('managedIdentityOperatorRole')))]",
@@ -1046,7 +1174,7 @@
                         "minCount": 3,
                         "maxCount": 4,
                         "vnetSubnetID": "[variables('vnetSystemNodePoolSubnetResourceId')]",
-                        "podSubnetID": "[variables('vnetSystemNodePoolSubnetResourceId')]",
+                        //"podSubnetID": "[variables('vnetSystemNodePoolSubnetResourceId')]",
                         "enableAutoScaling": true,
                         "type": "VirtualMachineScaleSets",
                         "mode": "System",
@@ -1077,7 +1205,7 @@
                         "minCount": 2,
                         "maxCount": 5,
                         "vnetSubnetID": "[variables('vnetInScopeNodePoolSubnetResourceId')]",
-                        "podSubnetID": "[variables('vnetInScopeNodePoolSubnetResourceId')]",
+                        //"podSubnetID": "[variables('vnetInScopeNodePoolSubnetResourceId')]",
                         "enableAutoScaling": true,
                         "type": "VirtualMachineScaleSets",
                         "mode": "User",
@@ -1114,7 +1242,7 @@
                         "minCount": 2,
                         "maxCount": 5,
                         "vnetSubnetID": "[variables('vnetOutOfScopeNodePoolSubnetResourceId')]",
-                        "podSubnetID": "[variables('vnetOutOfScopeNodePoolSubnetResourceId')]",
+                        //"podSubnetID": "[variables('vnetOutOfScopeNodePoolSubnetResourceId')]",
                         "enableAutoScaling": true,
                         "type": "VirtualMachineScaleSets",
                         "mode": "User",

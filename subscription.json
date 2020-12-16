@@ -13,12 +13,23 @@
         "roleId-SecurityAdmin": "/providers/Microsoft.Authorization/roleDefinitions/fb1c8493-542b-48eb-b624-b4c8fea62acd",
         "deploymentResourceRegion": "centralus" // This region is used as the default for all generic resource groups and for any additional deployment resources. No resources are actually deployed to this resource group.
     },
+    /* Required Permissions 
+     *  - Scope: Subscription
+     *    Role: Contributor
+     *    Reason: Creating resource groups, azure policy definations and assignments
+     *
+     * Optional Permissions
+     *  - Scope: Subscription
+     *    Role: Security Admin (or Owner)
+     *    Reason: To enable Azure Defender for Kubernetes, Container Registry, and Key Vault.
+     *    Notes: If unable to obtain permissions, you must pass false to the enableAzureDefender parameter or have someone else enable these for you.
+     */
     "parameters": {
         "enforceAzureDefenderAutoDeployPolicies": {
             "type": "bool",
             "defaultValue": true,
             "metadata": {
-                "description": "By default Azure Defender for Kubernetes Service, Container Registry, and Key Vault are configured to deploy via Azure Policy, use this parameter to disable that. Deploying these requires subscription Contributor, Security Admin, or Resource Policy Contributor roles."
+                "description": "By default Azure Defender for Kubernetes Service, Container Registry, and Key Vault are configured to deploy via Azure Policy, use this parameter to disable that."
             }
         },
         "enableAzureDefender": {

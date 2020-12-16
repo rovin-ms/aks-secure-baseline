@@ -1,0 +1,426 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "variables": {
+        "rgName-Hubs": "rg-enterprise-networking-hubs",
+        "rgName-Spokes": "rg-enterprise-networking-spokes",
+        "rgName-bu0001a0008": "rg-bu0001a0008",
+        "policyDefinitionId-AllowedResources": "/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c",
+        "policyDefinitionName-EnableAksDefender": "[guid(subscription().id, 'EnableDefenderForAks')]",
+        "policyDefinitionName-EnableAcrDefender": "[guid(subscription().id, 'EnableDefenderForAcr')]",
+        "policyDefinitionName-EnableAkvDefender": "[guid(subscription().id, 'EnableDefenderForAkv')]",
+        "policySetDefinitionName-EnableDefender": "[guid(subscription().id, 'EnableDefender')]",
+        "roleId-SecurityAdmin": "/providers/Microsoft.Authorization/roleDefinitions/fb1c8493-542b-48eb-b624-b4c8fea62acd"
+    },
+    "parameters": {
+        "enableAzureDefenderAutoDeployPolicies": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "By default Azure Defender for Kubernetes Service, Container Registry, and Key Vault are configured to deploy via Azure Policy, use this parameter to disable that. Deploying these requires subscription Contributor, Security Admin, or Resource Policy Contributor roles."
+            }
+        },
+        "enableAzureDefender": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "By default Azure Defender for Kubernetes Service, Container Registry, and Key Vault are enabled; use this parameter to prevent them from being enabled. Deploying these requires subscription Owner or Security Admin roles."
+            }
+        }
+    },
+    "resources": [
+        {
+            "name": "[variables('rgName-Hubs')]",
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2020-10-01",
+            "location": "centralus",
+            "comments": "This contains all of our regional hubs. Typically this would be found in your enterprise's Connectivity subscription."
+        },
+        {
+            "name": "[variables('rgName-Spokes')]",
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2020-10-01",
+            "location": "centralus",
+            "comments": "This contains all of our regional spokes. Typically this would be found in your enterprise's Connectivity subscription or in the workload subscriptions."
+        },
+        {
+            "name": "[variables('rgName-bu0001a0008')]",
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2020-10-01",
+            "location": "eastus",
+            "comments": "This is the resource group for BU-TODO. Typically this would be found in your workload's subscription."
+        },
+        {
+            "name": "[variables('policyDefinitionName-EnableAksDefender')]",
+            "type": "Microsoft.Authorization/policyDefinitions",
+            "apiVersion": "2019-09-01",
+            "properties": {
+                "displayName": "Enable Azure Defender for Kubernetes Standard",
+                "policyType": "Custom",
+                "mode": "All",
+                "description": "This policy ensures Azure Defender for Kubernetes Standard is active.",
+                "metadata": {
+                    "version": "1.0.0",
+                    "category": "Security Center"
+                },
+                "parameters": {},
+                "policyRule": {
+                    "if": {
+                        "allOf": [
+                            {
+                                "field": "type",
+                                "equals": "Microsoft.Resources/subscriptions"
+                            }
+                        ]
+                    },
+                    "then": {
+                        "effect": "deployIfNotExists",
+                        "details": {
+                            "type": "Microsoft.Security/pricings",
+                            "name": "KubernetesService",
+                            "deploymentScope": "subscription",
+                            "existenceScope": "subscription",
+                            "roleDefinitionIds": [
+                                "[variables('roleId-SecurityAdmin')]"
+                            ],
+                            "existenceCondition": {
+                                "field": "Microsoft.Security/pricings/pricingTier",
+                                "equals": "Standard"
+                            },
+                            "deployment": {
+                                "location": "centralus",
+                                "properties": {
+                                    "mode": "incremental",
+                                    "parameters": {},
+                                    "template": {
+                                        "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+                                        "contentVersion": "1.0.0.0",
+                                        "resources": [
+                                            {
+                                                "type": "Microsoft.Security/pricings",
+                                                "apiVersion": "2018-06-01",
+                                                "name": "KubernetesService",
+                                                "properties":{
+                                                    "pricingTier": "Standard"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "[variables('policyDefinitionName-EnableAcrDefender')]",
+            "type": "Microsoft.Authorization/policyDefinitions",
+            "apiVersion": "2019-09-01",
+            "properties": {
+                "displayName": "Enable Azure Defender for Container Registry Standard",
+                "policyType": "Custom",
+                "mode": "All",
+                "description": "This policy ensures Azure Defender for Container Registry Standard is active.",
+                "metadata": {
+                    "version": "1.0.0",
+                    "category": "Security Center"
+                },
+                "parameters": {},
+                "policyRule": {
+                    "if": {
+                        "allOf": [
+                            {
+                                "field": "type",
+                                "equals": "Microsoft.Resources/subscriptions"
+                            }
+                        ]
+                    },
+                    "then": {
+                        "effect": "deployIfNotExists",
+                        "details": {
+                            "type": "Microsoft.Security/pricings",
+                            "name": "ContainerRegistry",
+                            "deploymentScope": "subscription",
+                            "existenceScope": "subscription",
+                            "roleDefinitionIds": [
+                                "[variables('roleId-SecurityAdmin')]"
+                            ],
+                            "existenceCondition": {
+                                "field": "Microsoft.Security/pricings/pricingTier",
+                                "equals": "Standard"
+                            },
+                            "deployment": {
+                                "location": "centralus",
+                                "properties": {
+                                    "mode": "incremental",
+                                    "parameters": {},
+                                    "template": {
+                                        "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+                                        "contentVersion": "1.0.0.0",
+                                        "resources": [
+                                            {
+                                                "type": "Microsoft.Security/pricings",
+                                                "apiVersion": "2018-06-01",
+                                                "name": "ContainerRegistry",
+                                                "properties":{
+                                                    "pricingTier": "Standard"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "[variables('policyDefinitionName-EnableAkvDefender')]",
+            "type": "Microsoft.Authorization/policyDefinitions",
+            "apiVersion": "2019-09-01",
+            "properties": {
+                "displayName": "Enable Azure Defender for Key Vault Standard",
+                "policyType": "Custom",
+                "mode": "All",
+                "description": "This policy ensures Azure Defener for Key Vault Standard is active",
+                "metadata": {
+                    "version": "1.0.0",
+                    "category": "Security Center"
+                },
+                "parameters": {},
+                "policyRule": {
+                    "if": {
+                        "allOf": [
+                            {
+                                "field": "type",
+                                "equals": "Microsoft.Resources/subscriptions"
+                            }
+                        ]
+                    },
+                    "then": {
+                        "effect": "deployIfNotExists",
+                        "details": {
+                            "type": "Microsoft.Security/pricings",
+                            "name": "KeyVault",
+                            "deploymentScope": "subscription",
+                            "existenceScope": "subscription",
+                            "roleDefinitionIds": [
+                                "[variables('roleId-SecurityAdmin')]"
+                            ],
+                            "existenceCondition": {
+                                "field": "Microsoft.Security/pricings/pricingTier",
+                                "equals": "Standard"
+                            },
+                            "deployment": {
+                                "location": "centralus",
+                                "properties": {
+                                    "mode": "incremental",
+                                    "parameters": {},
+                                    "template": {
+                                        "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+                                        "contentVersion": "1.0.0.0",
+                                        "resources": [
+                                            {
+                                                "name": "KeyVault",
+                                                "type": "Microsoft.Security/pricings",
+                                                "apiVersion": "2018-06-01",
+                                                "location": "global",
+                                                "properties":{
+                                                    "pricingTier": "Standard"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "[variables('policySetDefinitionName-EnableDefender')]",
+            "type": "Microsoft.Authorization/policySetDefinitions",
+            "apiVersion": "2019-09-01",
+            "dependsOn": [
+                "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-EnableAksDefender'))]",
+                "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-EnableAcrDefender'))]",
+                "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-EnableAkvDefender'))]"
+            ],
+            "properties": {
+                "displayName": "Enable Azure Defender Standard",
+                "description": "Ensures Azure Defender is enabled for select resources",
+                "policyType": "Custom",
+                "metadata": {
+                    "version": "1.0.0",
+                    "category": "Security Center"
+                },
+                "policyDefinitions": [
+                    {
+                        "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-EnableAksDefender'))]"
+                    },
+                                        {
+                        "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-EnableAcrDefender'))]"
+                    },
+                    {
+                        "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-EnableAkvDefender'))]"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ApplyCommonHubRgPolicies",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-06-01",
+            "resourceGroup": "[variables('rgName-Hubs')]",
+            "dependsOn": [
+                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-Hubs'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "parameters": {},
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "name": "[guid(variables('policyDefinitionId-AllowedResources'), variables('rgName-Hubs'))]",
+                            "type": "Microsoft.Authorization/policyAssignments",
+                            "apiVersion": "2019-09-01",
+                            "comments": "Allowed Resources Policy applied to the hubs RG to only allow select networking and observation resources.",
+                            "properties": {
+                                "displayName": "[concat('[', variables('rgName-Hubs'), '] ', reference(variables('policyDefinitionId-AllowedResources'), '2020-09-01').displayName)]",
+                                "description": "List of supported resources for our enterprise hubs resource group",
+                                "scope": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-Hubs'))]",
+                                "policyDefinitionId": "[variables('policyDefinitionId-AllowedResources')]",
+                                "parameters": {
+                                    "listOfResourceTypesAllowed": {
+                                        "value": [
+                                            "Microsoft.Network/ipGroups",
+                                            "Microsoft.Network/azureFirewalls",
+                                            "Microsoft.Network/networkSecurityGroups",
+                                            "Microsoft.Network/networkSecurityGroups/securityRules",
+                                            "Microsoft.Network/virtualNetworks",
+                                            "Microsoft.Network/virtualNetworks/subnets",
+                                            "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+                                            "Microsoft.Network/publicIpAddresses",
+                                            "Microsoft.Network/bastionHosts",
+                                            "Microsoft.Insights/diagnosticSettings",
+                                            "Microsoft.OperationalInsights/workspaces"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "ApplyCommonSpokesRgPolicies",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-06-01",
+            "resourceGroup": "[variables('rgName-Spokes')]",
+            "dependsOn": [
+                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-Spokes'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "parameters": {},
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "name": "[guid(variables('policyDefinitionId-AllowedResources'), variables('rgName-Spokes'))]",
+                            "type": "Microsoft.Authorization/policyAssignments",
+                            "apiVersion": "2019-09-01",
+                            "comments": "Allowed Resources Policy applied to the spoke resource group to only allow select networking resources.",
+                            "properties": {
+                                "displayName": "[concat('[', variables('rgName-Spokes'), '] ', reference(variables('policyDefinitionId-AllowedResources'), '2020-09-01').displayName)]",
+                                "description": "List of supported resources for our enterprise spokes resource group",
+                                "scope": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-Spokes'))]",
+                                "policyDefinitionId": "[variables('policyDefinitionId-AllowedResources')]",
+                                "parameters": {
+                                    "listOfResourceTypesAllowed": {
+                                        "value": [
+                                            "Microsoft.Network/routeTables",
+                                            "Microsoft.Network/networkSecurityGroups",
+                                            "Microsoft.Network/virtualNetworks",
+                                            "Microsoft.Network/virtualNetworks/subnets",
+                                            "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+                                            "Microsoft.Network/privateDnsZones",
+                                            "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+                                            "Microsoft.Network/publicIpAddresses"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "[guid(variables('policySetDefinitionName-EnableDefender'), subscription().id)]",
+            "type": "Microsoft.Authorization/policyAssignments",
+            "apiVersion": "2019-09-01",
+            "location": "centralus",
+            "dependsOn": [
+                "[subscriptionResourceId('Microsoft.Authorization/policySetDefinitions', variables('policySetDefinitionName-EnableDefender'))]"
+            ],
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "comments": "Ensures various Azure Defender services are is enabled.",
+            "properties": {
+                "displayName": "[reference(subscriptionResourceId('Microsoft.Authorization/policySetDefinitions', variables('policySetDefinitionName-EnableDefender')), '2020-09-01').displayName]",
+                "description": "Ensures that Azure Defender for Kuberentes Service, Container Service, and Key Vault are enabled.",
+                "enforcementMode": "[if(parameters('enableAzureDefenderAutoDeployPolicies'), 'Default', 'DoNotEnforce')]",
+                "metadata": {
+                    "version": "1.0.0",
+                    "category": "Security Center"
+                },
+                "notScopes": [],
+                "scope": "[subscription().id]",
+                "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policySetDefinitions', variables('policySetDefinitionName-EnableDefender'))]",
+                "parameters": {}
+            }
+        },
+        {
+            "condition": "[parameters('enableAzureDefender')]",
+            "name": "KeyVault",
+            "type": "Microsoft.Security/pricings",
+            "apiVersion": "2018-06-01",
+            "location": "global",
+            "comments": "Enable Azure Defender Standard for Key Vault. Requires Owner or Security Admin role.",
+            "properties":{
+                "pricingTier": "Standard"
+            }
+        },
+        {
+            "condition": "[parameters('enableAzureDefender')]",
+            "name": "ContainerRegistry",
+            "type": "Microsoft.Security/pricings",
+            "apiVersion": "2018-06-01",
+            "location": "global",
+            "comments": "Enable Azure Defender Standard for Container Registry. Requires Owner or Security Admin role.",
+            "properties":{
+                "pricingTier": "Standard"
+            }
+        },
+        {
+            "condition": "[parameters('enableAzureDefender')]",
+            "name": "KubernetesService",
+            "type": "Microsoft.Security/pricings",
+            "apiVersion": "2018-06-01",
+            "location": "global",
+            "comments": "Enable Azure Defender Standard for Kubernetes Service. Requires Owner or Security Admin role.",
+            "properties":{
+                "pricingTier": "Standard"
+            }
+        }
+    ]
+}

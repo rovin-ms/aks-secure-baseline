@@ -40,6 +40,9 @@ data:
     [integrations.azure_network_policy_manager]
         collect_basic_metrics = true
         collect_advanced_metrics = false
+  agent-settings: |-
+    [agent_settings.health_model]
+        enabled = true
 metadata:
   name: container-azm-ms-agentconfig
   namespace: kube-system

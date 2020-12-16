@@ -47,32 +47,6 @@
     },
     "resources": [
         {
-            "name": "[guid('a08ec900-254a-4555-9bf5-e42af04b5c5c', resourceGroup().name)]",
-            "type": "Microsoft.Authorization/policyAssignments",
-            "apiVersion": "2020-03-01",
-            "location": "global",
-            "comments": "Allowed Resources Policy applied to the spoke resource group to only allow select networking resources.",
-            "properties": {
-                "displayName": "[concat('[', resourceGroup().name, '] ', reference('/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c', '2020-09-01').displayName)]",
-                "scope": "[resourceGroup().id]",
-                "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c",
-                "parameters": {
-                    "listOfResourceTypesAllowed": {
-                        "value": [
-                            "Microsoft.Network/routeTables",
-                            "Microsoft.Network/networkSecurityGroups",
-                            "Microsoft.Network/virtualNetworks",
-                            "Microsoft.Network/virtualNetworks/subnets",
-                            "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
-                            "Microsoft.Network/privateDnsZones",
-                            "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
-                            "Microsoft.Network/publicIpAddresses"
-                        ]
-                    }
-                }
-            }
-        },
-        {
             "name": "[variables('routeTableName')]",
             "type": "Microsoft.Network/routeTables",
             "apiVersion": "2020-05-01",

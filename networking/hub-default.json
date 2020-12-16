@@ -73,35 +73,6 @@
     },
     "resources": [
         {
-            "name": "[guid('a08ec900-254a-4555-9bf5-e42af04b5c5c', resourceGroup().name)]",
-            "type": "Microsoft.Authorization/policyAssignments",
-            "apiVersion": "2020-03-01",
-            "location": "global",
-            "comments": "Allowed Resources Policy applied to the hub to only allow select networking and observation resources.",
-            "properties": {
-                "displayName": "[concat('[', resourceGroup().name, '] ', reference('/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c', '2020-09-01').displayName)]",
-                "scope": "[resourceGroup().id]",
-                "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c",
-                "parameters": {
-                    "listOfResourceTypesAllowed": {
-                        "value": [
-                            "Microsoft.Network/ipGroups",
-                            "Microsoft.Network/azureFirewalls",
-                            "Microsoft.Network/networkSecurityGroups",
-                            "Microsoft.Network/networkSecurityGroups/securityRules",
-                            "Microsoft.Network/virtualNetworks",
-                            "Microsoft.Network/virtualNetworks/subnets",
-                            "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
-                            "Microsoft.Network/publicIpAddresses",
-                            "Microsoft.Network/bastionHosts",
-                            "Microsoft.Insights/diagnosticSettings",
-                            "Microsoft.OperationalInsights/workspaces"
-                        ]
-                    }
-                }
-            }
-        },
-        {
             "name": "[variables('hubLaName')]",
             "type": "Microsoft.OperationalInsights/workspaces",
             "apiVersion": "2015-11-01-preview",

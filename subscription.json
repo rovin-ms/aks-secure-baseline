@@ -319,6 +319,7 @@
                                             "Microsoft.Network/publicIpAddresses",
                                             "Microsoft.Network/bastionHosts",
                                             "Microsoft.Insights/diagnosticSettings",
+                                            "Microsoft.Insights/workbooks",
                                             "Microsoft.OperationalInsights/workspaces"
                                         ]
                                     }

@@ -5,7 +5,7 @@
         "hubVnetResourceId": {
             "type": "string",
             "metadata": {
-                "description": "The hub networking which it is going to be peering"
+                "description": "The regional hub network to which this spoke will peer to."
             }
         },
         "location": {
@@ -51,7 +51,7 @@
             "type": "Microsoft.Network/routeTables",
             "apiVersion": "2020-05-01",
             "location": "[parameters('location')]",
-            "comments": "NextHop to Hub",
+            "comments": "NextHop to Regional Hub",
             "properties": {
                 "routes": [
                     {
@@ -59,7 +59,7 @@
                         "properties": {
                             "nextHopType": "VirtualAppliance",
                             "addressPrefix": "0.0.0.0/0",
-                            "nextHopIpAddress": "[reference(resourceId(variables('hubRgName'), 'Microsoft.Network/azureFirewalls', concat('fw-', parameters('location'), '-hub')), '2019-11-01', 'Full').properties.ipConfigurations[0].properties.privateIpAddress]"
+                            "nextHopIpAddress": "[reference(resourceId(variables('hubRgName'), 'Microsoft.Network/azureFirewalls', concat('fw-', parameters('location'), '-hub')), '2020-05-01').ipConfigurations[0].properties.privateIpAddress]"
                         }
                     }
                 ]
@@ -438,7 +438,12 @@
                     }
                 ],
                 "enableDdosProtection": false,
-                "enableVmProtection": false
+                "enableVmProtection": false,
+                "dhcpOptions": {
+                    "dnsServers": [
+                        "[reference(resourceId(variables('hubRgName'), 'Microsoft.Network/azureFirewalls', concat('fw-', parameters('location'), '-hub')), '2020-05-01').ipConfigurations[0].properties.privateIpAddress]"
+                    ]
+                }
             },
             "resources": [
                 {
@@ -567,7 +572,7 @@
         {
             "name": "[variables('primaryClusterPipName')]",
             "type": "Microsoft.Network/publicIpAddresses",
-            "apiVersion": "2019-11-01",
+            "apiVersion": "2020-05-01",
             "location": "[parameters('location')]",
             "comments": "Used as primary entry point for workload. Expected to be assigned to an AAG.",
             "sku": {

@@ -410,7 +410,7 @@
             ],
             "properties": {
                 "additionalProperties": {
-                    "Network.DNS.EnableProxy": "false"
+                    "Network.DNS.EnableProxy": "true"
                 },
                 "sku": {
                     "name": "AZFW_VNet",
@@ -439,7 +439,7 @@
                             "action": {
                                 "type": "Deny"
                             },
-                            "priority": 1000,
+                            "priority": 100,
                             "rules": [
                                 {
                                     "name": "ICMP Protocol",
@@ -459,7 +459,7 @@
                                 }
                             ]
                         }
-                    },
+                    }/*,
                     {
                         "name": "org-wide-allowed",
                         "properties": {
@@ -468,7 +468,7 @@
                             },
                             "priority": 60000,
                             "rules": [
-                                {
+                                /*{
                                     "name": "DNS",
                                     "description": "Support DNS lookups. Consider restricting further.",
                                     "sourceAddresses": [
@@ -483,7 +483,7 @@
                                     "destinationAddresses": [
                                         "*"
                                     ]
-                                }/*,
+                                }*//*,
                                 {
                                     "name": "HTTP-and-HTTPS",
                                     "description": "Allow, but log, all 80 and 443 traffic outbound. Consider restricting further.",
@@ -500,10 +500,10 @@
                                     "destinationAddresses": [
                                         "*"
                                     ]
-                                }*/
+                                }*//*
                             ]
                         }
-                    }
+                    }*/
                 ],
                 "applicationRuleCollections": []
             },

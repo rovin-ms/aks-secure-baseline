@@ -42,7 +42,7 @@ if [ $OPTIND = 1 ]; then
 fi
 
 echo deleting $RGNAMECLUSTER
-#az group delete -n $RGNAMECLUSTER --yes
+az group delete -n $RGNAMECLUSTER --yes
 
 echo deleting $RGNAMEHUB
 az group delete -n $RGNAMEHUB --yes
@@ -51,4 +51,4 @@ echo deleting $RGNAMESPOKES
 az group delete -n $RGNAMESPOKES --yes
 
 echo deleting key vault soft delete
- az keyvault purge --name kv-${AKS_CLUSTER_NAME} --location ${RGLOCATION}
+az keyvault purge --name kv-${AKS_CLUSTER_NAME} --location ${RGLOCATION}

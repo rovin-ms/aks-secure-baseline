@@ -112,8 +112,6 @@
         "clusterName": "[concat('aks-', variables('subRgUniqueString'))]",
         "logAnalyticsWorkspaceName": "[concat('la-', variables('clusterName'))]",
         "containerInsightsSolutionName": "[concat('ContainerInsights(', variables('logAnalyticsWorkspaceName'),')')]",
-        "updatesSolutionName": "[concat('Updates(', variables('logAnalyticsWorkspaceName'),')')]",
-        "changeTrackingSolutionName": "[concat('ChangeTracking(', variables('logAnalyticsWorkspaceName'), ')')]",
         "defaultAcrName": "[concat('acraks', variables('subRgUniqueString'))]",
 
         "vNetResourceGroup": "[split(parameters('targetVnetResourceId'),'/')[4]]",

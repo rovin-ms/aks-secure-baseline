@@ -505,14 +505,33 @@
                                     "destinationPorts": [
                                         "123"
                                     ],
-                                    "destinationFqdns": [
+                                    /* Ideal -- but not complete enough - e.g. finding requests resolved by the pool that are being blocked. "destinationFqdns": [
                                         "ntp.ubuntu.com",
                                         "0.ubuntu.pool.ntp.org",
                                         "1.ubuntu.pool.ntp.org",
                                         "2.ubuntu.pool.ntp.org",
                                         "3.ubuntu.pool.ntp.org"
+                                    ]*/
+                                    "destinationAddresses": [
+                                        "*"
                                     ]
-                                }
+                                }/*,
+                                {
+                                    "name": "local-dns",
+                                    "description": "As AKS cluster is started, core-dns is not active yet.  TODO: This is safe to keep removed, yeah?",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        "UDP"
+                                    ],
+                                    "destinationPorts": [
+                                        "53"
+                                    ],
+                                    "destinationAddresses": [
+                                        "172.16.0.10"
+                                    ]
+                                }*/
                             ]
                         }
                     },

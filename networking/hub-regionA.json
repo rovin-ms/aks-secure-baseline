@@ -506,7 +506,11 @@
                                         "123"
                                     ],
                                     "destinationFqdns": [
-                                        "ntp.ubuntu.com"
+                                        "ntp.ubuntu.com",
+                                        "0.ubuntu.pool.ntp.org",
+                                        "1.ubuntu.pool.ntp.org",
+                                        "2.ubuntu.pool.ntp.org",
+                                        "3.ubuntu.pool.ntp.org"
                                     ]
                                 }
                             ]
@@ -742,6 +746,39 @@
                                         "security.ubuntu.com",
                                         "azure.archive.ubuntu.com",
                                         "changelogs.ubuntu.com"
+                                    ]
+                                },
+                                {
+                                    "name": "ubuntu-misc-https",
+                                    "description": "Other common Ubuntu requests. Can block if desired.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "motd.ubuntu.com",
+                                        "api.snapcraft.io"
+                                    ]
+                                },
+                                {
+                                    "name": "ubuntu-misc-http",
+                                    "description": "Other common Ubuntu requests. Can block if desired.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Http",
+                                            "port": 80
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "ifconfig.co"
                                     ]
                                 },
                                 {

@@ -2,14 +2,17 @@
 
 set -e
 
-# This script might take about 20 minutes
+#This script will create two hub-spoke. The hubs are regional hubs. Each region will have his own cluster. 
+
+# This script might take about 40 minutes
 # Please check the variables
-LOCATION=$1
-RGNAMEHUB=$2
-RGNAMESPOKES=$3
-RGNAMECLUSTER=$4
-TENANT_ID=$5
-MAIN_SUBSCRIPTION=$6
+LOCATION1=$1
+LOCATION2=$1
+RGNAMEHUB=$3
+RGNAMESPOKES=$5
+RGNAMECLUSTER=$6
+TENANT_ID=$7
+MAIN_SUBSCRIPTION=$9
 
 AKS_ADMIN_NAME=aksadminuser
 AKS_ENDUSER_NAME=aksuser
@@ -20,7 +23,8 @@ K8S_RBAC_AAD_PROFILE_ADMIN_GROUP_NAME="add-to-bu0001a000800-cluster-admin"
 __usage="
     [-c RGNAMECLUSTER]
     [-h RGNAMEHUB]
-    [-l LOCATION]
+    [-l LOCATION1]
+    [-e LOCATION2]
     [-s MAIN_SUBSCRIPTION]
     [-t TENANT_ID]
     [-p RGNAMESPOKES]
@@ -32,11 +36,12 @@ usage() {
     exit 1
 }
 
-while getopts "c:h:l:s:t:p:" opt; do
+while getopts "c:h:l:e:s:t:p:" opt; do
     case $opt in
     c)  RGNAMECLUSTER="${OPTARG}";;
     h)  RGNAMEHUB="${OPTARG}";;
-    l)  LOCATION="${OPTARG}";;
+    l)  LOCATION1="${OPTARG}";;
+    e)  LOCATION2="${OPTARG}";;
     s)  MAIN_SUBSCRIPTION="${OPTARG}";;
     t)  TENANT_ID="${OPTARG}";;
     p)  RGNAMESPOKES="${OPTARG}";;
@@ -50,8 +55,15 @@ if [ $OPTIND = 1 ]; then
     exit 0
 fi
 
+RGNAMEHUB1=${RGNAMEHUB}-${LOCATION1}
+RGNAMEHUB2=${RGNAMEHUB}-${LOCATION2}
+RGNAMESPOKES1=${RGNAMESPOKES}-${LOCATION1}
+RGNAMESPOKES2=${RGNAMESPOKES}-${LOCATION2}
+RGNAMECLUSTER1=${RGNAMECLUSTER}-${LOCATION1}
+RGNAMECLUSTER2=${RGNAMECLUSTER}-${LOCATION2}
+
 echo ""
-echo "# Creating users and group for AAD-AKS integration. It could be in a different tenant"
+echo "# Creating users and group for AAD-AKS integration. It could be in a different tenant. The same tenant a users will manage both clusters"
 echo ""
 
 # We are going to use a new tenant to provide identity
@@ -75,43 +87,76 @@ echo ""
 az login
 az account set -s $MAIN_SUBSCRIPTION
 
+echo ""
+echo "## Region1 ${LOCATION1}"
+echo ""
+
 #Main Network.Build the hub. First arm template execution and catching outputs. This might take about 6 minutes
-az group create --name "${RGNAMEHUB}" --location "${LOCATION}"
+az group create --name "${RGNAMEHUB1}" --location "${LOCATION1}"
 
-az deployment group create --resource-group "${RGNAMEHUB}" --template-file "./networking/hub-default.json"  --name "hub-0001" --parameters \
-         location=$LOCATION
+az deployment group create --resource-group "${RGNAMEHUB1}" --template-file "./networking/hub-default.json"  --name "hub-${LOCATION1}-001" --parameters \
+         location=$LOCATION1
 
-HUB_VNET_ID=$(az deployment group show -g $RGNAMEHUB -n hub-0001 --query properties.outputs.hubVnetId.value -o tsv)
+HUB_VNET_ID1=$(az deployment group show -g $RGNAMEHUB1 -n hub-${LOCATION1}-001 --query properties.outputs.hubVnetId.value -o tsv)
 
 #Cluster Subnet.Build the spoke. Second arm template execution and catching outputs. This might take about 2 minutes
-az group create --name "${RGNAMESPOKES}" --location "${LOCATION}"
+az group create --name "${RGNAMESPOKES1}" --location "${LOCATION1}"
 
-az deployment group  create --resource-group "${RGNAMESPOKES}" --template-file "./networking/spoke-BU0001A0008.json" --name "spoke-0001" --parameters \
-          location=$LOCATION \
-          hubVnetResourceId=$HUB_VNET_ID 
+az deployment group  create --resource-group "${RGNAMESPOKES1}" --template-file "./networking/spoke-BU0001A0008.json" --name "spoke-${LOCATION1}-001" --parameters \
+          location=$LOCATION1 \
+          hubVnetResourceId=$HUB_VNET_ID1 
 
-export TARGET_VNET_RESOURCE_ID=$(az deployment group show -g $RGNAMESPOKES -n spoke-0001 --query properties.outputs.clusterVnetResourceId.value -o tsv)
+TARGET_VNET_RESOURCE_ID1=$(az deployment group show -g $RGNAMESPOKES1 -n spoke-${LOCATION1}-001 --query properties.outputs.clusterVnetResourceId.value -o tsv)
 
-NODEPOOL_SUBNET_RESOURCE_IDS=$(az deployment group show -g $RGNAMESPOKES -n spoke-0001 --query properties.outputs.nodepoolSubnetResourceIds.value -o tsv)
+NODEPOOL_SUBNET_RESOURCE_IDS1=$(az deployment group show -g $RGNAMESPOKES1 -n spoke-${LOCATION1}-001 --query properties.outputs.nodepoolSubnetResourceIds.value -o tsv)
 
 #Main Network Update. Third arm template execution and catching outputs. This might take about 3 minutes
 
-az deployment group create --resource-group "${RGNAMEHUB}" --template-file "./networking/hub-regionA.json" --name "hub-0002" --parameters \
-            location=$LOCATION \
-            nodepoolSubnetResourceIds="['$NODEPOOL_SUBNET_RESOURCE_IDS']"
+az deployment group create --resource-group "${RGNAMEHUB1}" --template-file "./networking/hub-regionA.json" --name "hub-${LOCATION1}-002" --parameters \
+            location=$LOCATION1 \
+            nodepoolSubnetResourceIds="['$NODEPOOL_SUBNET_RESOURCE_IDS1']"
+
+echo ""
+echo "## Region2 ${LOCATION2}"
+echo ""
+
+#Main Network.Build the hub. First arm template execution and catching outputs. This might take about 6 minutes
+az group create --name "${RGNAMEHUB2}" --location "${LOCATION2}"
+
+az deployment group create --resource-group "${RGNAMEHUB2}" --template-file "./networking/hub-default.json"  --name "hub-${LOCATION2}-001" --parameters \
+         location=$LOCATION2
+
+HUB_VNET_ID2=$(az deployment group show -g $RGNAMEHUB2 -n hub-${LOCATION2}-001 --query properties.outputs.hubVnetId.value -o tsv)
+
+#Cluster Subnet.Build the spoke. Second arm template execution and catching outputs. This might take about 2 minutes
+az group create --name "${RGNAMESPOKES2}" --location "${LOCATION2}"
+
+az deployment group  create --resource-group "${RGNAMESPOKES2}" --template-file "./networking/spoke-BU0001A0008.json" --name "spoke-${LOCATION2}-001" --parameters \
+          location=$LOCATION2 \
+          hubVnetResourceId=$HUB_VNET_ID2 
+
+TARGET_VNET_RESOURCE_ID2=$(az deployment group show -g $RGNAMESPOKES2 -n spoke-${LOCATION2}-001 --query properties.outputs.clusterVnetResourceId.value -o tsv)
+
+NODEPOOL_SUBNET_RESOURCE_IDS2=$(az deployment group show -g $RGNAMESPOKES2 -n spoke-${LOCATION2}-001 --query properties.outputs.nodepoolSubnetResourceIds.value -o tsv)
+
+#Main Network Update. Third arm template execution and catching outputs. This might take about 3 minutes
+
+az deployment group create --resource-group "${RGNAMEHUB2}" --template-file "./networking/hub-regionA.json" --name "hub-${LOCATION2}-002" --parameters \
+            location=$LOCATION2 \
+            nodepoolSubnetResourceIds="['$NODEPOOL_SUBNET_RESOURCE_IDS2']"
 
 echo ""
 echo "# Preparing cluster parameters"
 echo ""
 
-az group create --name "${RGNAMECLUSTER}" --location "${LOCATION}"
-
+az group create --name "${RGNAMECLUSTER1}" --location "${LOCATION1}"
+az group create --name "${RGNAMECLUSTER2}" --location "${LOCATION2}"
 cat << EOF
 
 NEXT STEPS
 ---- -----
 
-./1-cluster-stamp.sh $LOCATION $RGNAMECLUSTER $RGNAMESPOKES $TENANT_ID $MAIN_SUBSCRIPTION $TARGET_VNET_RESOURCE_ID $K8S_RBAC_AAD_PROFILE_ADMIN_GROUP_OBJECTID $K8S_RBAC_AAD_PROFILE_TENANTID $AKS_ENDUSER_NAME $AKS_ENDUSER_PASSWORD
+./1-cluster-stamp.sh $LOCATION1 $LOCATION2 $RGNAMECLUSTER1 $RGNAMECLUSTER2 $RGNAMESPOKES1 $RGNAMESPOKES2 $TENANT_ID $MAIN_SUBSCRIPTION $TARGET_VNET_RESOURCE_ID1 $TARGET_VNET_RESOURCE_ID2 $K8S_RBAC_AAD_PROFILE_ADMIN_GROUP_OBJECTID $K8S_RBAC_AAD_PROFILE_TENANTID $AKS_ENDUSER_NAME $AKS_ENDUSER_PASSWORD
 
 EOF
 

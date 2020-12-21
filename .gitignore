@@ -4,3 +4,9 @@
 *.pfx
 *.pem
 sp.json
+###############
+# Directories #
+###############
+bin/
+obj/
+.vs/

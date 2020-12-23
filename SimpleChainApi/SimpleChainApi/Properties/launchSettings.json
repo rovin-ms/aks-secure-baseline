@@ -22,7 +22,7 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "SELF_HOSTS_DEPENDENCIES": "localhost:49189",
+        "SELF_HOSTS_DEPENDENCIES": "localhost:5001",
         "ASPNETCORE_ENVIRONMENT": "Development",
         "EXTERNAL_DEPENDENCIES": "https://www.microsoft.com/,https://www.bing.com/,https://failure/"
       },

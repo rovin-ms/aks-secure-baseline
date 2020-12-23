@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -32,33 +31,26 @@ namespace SimpleChainApi.Controllers
         }
 
         [HttpGet]
-        public async Task<DependencyResult> GetAsync()
+        [Route("depth/{depth:int}")]
+        public async Task<DependencyResult> GetAsync(int depth)
         {
             var dependencyResult = new DependencyResult();
+            var client = _clientFactory.CreateClient();
 
-            await ComputeExternalDependencies(dependencyResult);
+            await ComputeExternalDependenciesAsync(client, dependencyResult);
 
-            await ComputeSelfDependencies(dependencyResult);
+            await ComputeSelfDependenciesAsync(client, dependencyResult, depth);
 
             return dependencyResult;
         }
 
-        [HttpGet]
-        [Route("endcall")]
-        public Task<DependencyResult> GetEndCallAsync()
-        {
-            var dependencyResult = new DependencyResult();
 
-            return Task.FromResult(dependencyResult);
-        }
-
-        private async Task ComputeExternalDependencies(DependencyResult dependencyResult)
+        private async Task ComputeExternalDependenciesAsync(HttpClient client, DependencyResult dependencyResult)
         {
             var urlList = _configuration[EXTERNAL_DEPENDENCIES];
             _logger.LogInformation("URL external dependencies {urlList}", urlList);
             if (!string.IsNullOrWhiteSpace(urlList))
             {
-                var client = _clientFactory.CreateClient();
                 var result = new List<URLCalled>();
                 foreach (var url in urlList.Split(','))
                 {
@@ -81,17 +73,16 @@ namespace SimpleChainApi.Controllers
             }
         }
 
-        private async Task ComputeSelfDependencies(DependencyResult dependencyResult)
+        private async Task ComputeSelfDependenciesAsync(HttpClient client, DependencyResult dependencyResult, int depth)
         {
             var hostPortList = _configuration[SELF_HOSTS_DEPENDENCIES];
-            _logger.LogInformation("URL self dependencies {urlList}", hostPortList);
-            if (!string.IsNullOrWhiteSpace(hostPortList))
+            _logger.LogInformation("URL self dependencies {hostPortList}", hostPortList);
+            if (!string.IsNullOrWhiteSpace(hostPortList) && depth > 0)
             {
-                var client = _clientFactory.CreateClient();
                 var result = new List<SelfDependencyCalled>();
                 foreach (var hostPort in hostPortList.Split(','))
                 {
-                    var url = $"http://{hostPort}/URLCaller/endcall";
+                    var url = $"https://{hostPort}/URLCaller/depth/{--depth}";
                     var urlCalledResult = new SelfDependencyCalled { Date = DateTime.Now, URI = url };
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
                     try
@@ -105,7 +96,7 @@ namespace SimpleChainApi.Controllers
                             urlCalledResult.DependencyResult = innerDependencyResult;
                         }
                     }
-                    catch (HttpRequestException e)
+                    catch (HttpRequestException)
                     {
                         urlCalledResult.Success = false;
                     }

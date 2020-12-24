@@ -35,8 +35,9 @@
     "variables": {
         "orgAppId": "BU0001A0008",
         "clusterVNetName": "[concat('vnet-hub-spoke-', variables('orgAppId'), '-00')]",
+        "imageBuilderVNetName": "[concat('vnet-hub-spoke-', variables('orgAppId'), '-01')]",
 
-        "routeTableName": "[concat('route-', variables('clusterVNetName'), '-clusternodes-to-hub')]",
+        "routeTableName": "[concat('route-to-hub-nva')]",
         "hubRgName": "[split(parameters('hubVnetResourceId'),'/')[4]]",
         "hubNetworkName": "[split(parameters('hubVnetResourceId'),'/')[8]]",
 
@@ -219,6 +220,139 @@
             ]
         },
         {
+            "name": "[concat('nsg-', variables('imageBuilderVNetName'), '-imageBuilder')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "NSG on the jumpbox image builder subnet.",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "AllowAzureLoadBalacner60001InBound",
+                        "properties": {
+                            "description": "Allows heath probe traffic to AIB Proxy VM on 60001 (SSH)",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "AzureLoadBalancer",
+                            "destinationPortRange": "60001",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "AllowVNet60001InBound",
+                        "properties": {
+                            "description": "Allows traffic from AIB Service PrivateLinl to AIB ProxyVM",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "destinationPortRange": "60001",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 110,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "AllowVNet22InBound",
+                        "properties": {
+                            "description": "Allows Packer VM to receive SSH traffic from AIB Proxy VM",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "destinationPortRange": "22",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 120,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "DenyAllInBound",
+                        "properties": {
+                            "description": "Deny remaining traffic.",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 1000,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "Allow443ToAnyOutBound",
+                        "properties": {
+                            "description": "Allow VMs to communicate to azure management APIs and Azure Storage",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "destinationPortRange": "443",
+                            "destinationAddressPrefix": "Any",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "AllowSshToVNetOutBound",
+                        "properties": {
+                            "description": "Allow Proxy VM to communicate to Packer VM",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "destinationPortRange": "22",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 110,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "DenyAllOutBound",
+                        "properties": {
+                            "description": "Deny all remaining outbound traffic",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 1000,
+                            "direction": "Outbound"
+                        }
+                    }
+                ]
+            },
+            "resources": [
+                {
+                    "name": "/Microsoft.Insights/toHub",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-imageBuilder'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
+                        "logs": [
+                            {
+                                "category": "NetworkSecurityGroupEvent",
+                                "enabled": true
+                            },
+                            {
+                                "category": "NetworkSecurityGroupRuleCounter",
+                                "enabled": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
             "name": "[concat('nsg-', variables('clusterVNetName'), '-appgw')]",
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2020-05-01",
@@ -336,6 +470,84 @@
             ]
         },
         {
+            "name": "[variables('imageBuilderVNetName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "This vnet is used exclusively for jumpbox image builds.",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('imageBuilderVNetName'), '-imageBuilder'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.241.0.0/26"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "snet-imagebuilder",
+                        "properties": {
+                            "addressPrefix": "10.241.0.0/28",
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                            },
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('imageBuilderVNetName'), '-imageBuilder'))]"
+                            },
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Disabled"
+                        }
+                    }
+                ],
+                "enableDdosProtection": false,
+                "enableVmProtection": false,
+                "dhcpOptions": {
+                    "dnsServers": [
+                        "[reference(resourceId(variables('hubRgName'), 'Microsoft.Network/azureFirewalls', concat('fw-', parameters('location'), '-hub')), '2020-05-01').ipConfigurations[0].properties.privateIpAddress]"
+                    ]
+                }
+            },
+            "resources": [
+                // TODO: Nest in above once validated
+                {
+                    "name": "[concat('spoke-to-', variables('hubNetworkName'))]",
+                    "type": "virtualNetworkPeerings",
+                    "apiVersion": "2020-05-01",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/virtualNetworks', variables('imageBuilderVNetName'))]"
+                    ],
+                    "properties": {
+                        "remoteVirtualNetwork": {
+                            "id": "[parameters('hubVnetResourceId')]"
+                        },
+                        "allowForwardedTraffic": true,
+                        "allowVirtualNetworkAccess": true,
+                        "allowGatewayTransit": false,
+                        "useRemoteGateways": false
+                    }
+                },
+                {
+                    "name": "/Microsoft.Insights/toHub",
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/virtualNetworks', variables('imageBuilderVNetName'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
             "name": "[variables('clusterVNetName')]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2020-05-01",
@@ -343,7 +555,8 @@
             "comments": "65,536 (-reserved) IPs available to the workload, split across four subnets for AKS, one for App Gateway, and two for management.",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
             ],
             "properties": {
                 "addressSpace": {
@@ -400,7 +613,9 @@
                             "addressPrefix": "10.240.4.0/28",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
-                            }
+                            },
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
                         }
                     },
                     {
@@ -409,31 +624,37 @@
                             "addressPrefix": "10.240.4.16/28",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-appgw'))]"
-                            }
+                            },
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
                         }
                     },
                     {
                         "name": "snet-management-ops",
                         "properties": {
-                            "addressPrefix": "10.240.1.0/26",
+                            "addressPrefix": "10.240.1.0/28",
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
                             },
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
-                            }
+                            },
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
                         }
                     },
                     {
                         "name": "snet-management-agents",
                         "properties": {
-                            "addressPrefix": "10.240.1.64/26",
+                            "addressPrefix": "10.240.2.0/26",
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
                             },
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
-                            }
+                            },
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
                         }
                     }
                 ],
@@ -489,7 +710,8 @@
             "resourceGroup": "[variables('hubRgName')]",
             "comments": "Sub incremental deployment to perform hub-to-spoke peering",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('imageBuilderVNetName'))]"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -504,6 +726,20 @@
                             "properties": {
                                 "remoteVirtualNetwork": {
                                     "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
+                                },
+                                "allowForwardedTraffic": false,
+                                "allowGatewayTransit": false,
+                                "allowVirtualNetworkAccess": true,
+                                "useRemoteGateways": false
+                            }
+                        },
+                        {
+                            "name": "[concat(variables('hubNetworkName'), '/hub-to-', variables('imageBuilderVNetName'))]",
+                            "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+                            "apiVersion": "2020-05-01",
+                            "properties": {
+                                "remoteVirtualNetwork": {
+                                    "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('imageBuilderVNetName'))]"
                                 },
                                 "allowForwardedTraffic": false,
                                 "allowGatewayTransit": false,
@@ -596,6 +832,10 @@
                         resourceId('Microsoft.Network/virtualNetworks/subnets', variables('clusterVNetName'), 'snet-cluster-inscopenodepools'),
                         resourceId('Microsoft.Network/virtualNetworks/subnets', variables('clusterVNetName'), 'snet-cluster-outofscopenodepools'))]",
             "type": "array"
+        },
+        "imagebuilderSubnetResourceIds": {
+            "type": "array",
+            "value": "[createArray(resourceId('Microsoft.Network/virtualNetworks/subnets', variables('imageBuilderVNetName'), 'snet-imagebuilder'))]"
         },
         "appGwPublicIpAddress": {
             "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('primaryClusterPipName'))).ipAddress]",

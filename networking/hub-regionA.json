@@ -8,6 +8,12 @@
                 "description": "Subnet resource Ids for all AKS clusters nodepools in all attached spokes to allow necessary outbound traffic through the firewall"
             }
         },
+        "imagebuilderSubnetResourceIds": {
+            "type": "array",
+            "metadata": {
+                "description": "Subnet resource Ids for image builder subnets all in all attached spokes to allow necessary outbound traffic through the firewall"
+            }
+        },
         "location": {
             "defaultValue": "eastus2",
             "type": "string",
@@ -71,6 +77,7 @@
     },
     "variables": {
         "aksIpGroupName": "[concat('ipg-', parameters('location'), '-AksNodepools')]",
+        "imageBuilderIpGroupName": "[concat('ipg-', parameters('location'), '-AksJumpboxImageBuilders')]",
         "defaultFwPipName": "[concat('pip-fw-', parameters('location'), '-default')]",
         "bastionPipName": "[concat('pip-ab-', parameters('location'))]",
         "bastionServiceName": "[concat('ab-', parameters('location'))]",
@@ -413,6 +420,22 @@
                         "name": "ipAddresses",
                         "count": "[length(parameters('nodepoolSubnetResourceIds'))]",
                         "input": "[reference(parameters('nodepoolSubnetResourceIds')[copyIndex('ipAddresses')], '2019-11-01').addressPrefix]"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[variables('imageBuilderIpGroupName')]",
+            "type": "Microsoft.Network/ipGroups",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "This holds IP addresses of known AKS Jumpbox image build subnets in spokes.",
+            "properties": {
+                "copy": [
+                    {
+                        "name": "ipAddresses",
+                        "count": "[length(parameters('nodepoolSubnetResourceIds'))]",
+                        "input": "[reference(parameters('imagebuilderSubnetResourceIds')[copyIndex('ipAddresses')], '2019-11-01').addressPrefix]"
                     }
                 ]
             }
@@ -892,6 +915,33 @@
                                     ],
                                     "targetFqdns": [
                                         "github.com"
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "AKSImageBuilder",
+                        "properties": {
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "priority": 350,
+                            "rules": [
+                                {
+                                    "name": "to-blobstorage",
+                                    "description": "This is required as the Proxy VM and Packer VMs both read and write from transient storage accounts (no ability to know what storage accounts ahead of time.)",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "*.blob.core.windows.net"
                                     ]
                                 }
                             ]

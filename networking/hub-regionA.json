@@ -929,6 +929,22 @@
                             "priority": 350,
                             "rules": [
                                 {
+                                    "name": "to-azuremanagement",
+                                    "description": "This for AIB VMs to communicate with azure management API.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "management.azure.com"
+                                    ]
+                                },
+                                {
                                     "name": "to-blobstorage",
                                     "description": "This is required as the Proxy VM and Packer VMs both read and write from transient storage accounts (no ability to know what storage accounts ahead of time.)",
                                     "sourceIpGroups": [
@@ -959,7 +975,8 @@
                                     "targetFqdns": [
                                         "azure.archive.ubuntu.com",
                                         "packages.microsoft.com",
-                                        "security.ubunutu.com"
+                                        "archive.ubuntu.com",
+                                        "security.ubuntu.com"
                                     ]
                                 },
                                 {

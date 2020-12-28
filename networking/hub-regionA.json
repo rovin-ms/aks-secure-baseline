@@ -997,6 +997,7 @@
                                     ],
                                     "targetFqdns": [
                                         "aka.ms",
+                                        "azurecliextensionsync.blob.core.windows.net",
                                         "azurecliprod.blob.core.windows.net"
                                     ]
                                 },
@@ -1014,6 +1015,7 @@
                                     ],
                                     "targetFqdns": [
                                         "storage.googleapis.com",
+                                        "api.github.com",
                                         "github.com"
                                     ]
                                 },

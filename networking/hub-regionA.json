@@ -970,6 +970,10 @@
                                         {
                                             "protocolType": "Http",
                                             "port": 80
+                                        },
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
                                         }
                                     ],
                                     "targetFqdns": [
@@ -992,6 +996,7 @@
                                         }
                                     ],
                                     "targetFqdns": [
+                                        "aka.ms",
                                         "azurecliprod.blob.core.windows.net"
                                     ]
                                 },

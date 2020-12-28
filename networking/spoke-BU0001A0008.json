@@ -286,14 +286,28 @@
                     {
                         "name": "Allow443ToAnyOutBound",
                         "properties": {
-                            "description": "Allow VMs to communicate to azure management APIs and Azure Storage",
+                            "description": "Allow VMs to communicate to azure management APIs, Azure Storage, and perform install tasks.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
                             "sourceAddressPrefix": "VirtualNetwork",
                             "destinationPortRange": "443",
-                            "destinationAddressPrefix": "Any",
+                            "destinationAddressPrefix": "Internet",
                             "access": "Allow",
                             "priority": 100,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "Allow80ToAnyOutBound",
+                        "properties": {
+                            "description": "Allow Packer VM to use apt-get to upgrade packages",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "destinationPortRange": "80",
+                            "destinationAddressPrefix": "Internet",
+                            "access": "Allow",
+                            "priority": 102,
                             "direction": "Outbound"
                         }
                     },
@@ -334,10 +348,10 @@
                     "apiVersion": "2017-05-01-preview",
                     "location": "[parameters('location')]",
                     "dependsOn": [
-                        "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-imageBuilder'))]"
+                        "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('imageBuilderVNetName'), '-imageBuilder'))]"
                     ],
                     "properties": {
-                        "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
+                        "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2020-05-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
                         "logs": [
                             {
                                 "category": "NetworkSecurityGroupEvent",
@@ -454,7 +468,7 @@
                         "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-appgw'))]"
                     ],
                     "properties": {
-                        "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2019-11-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
+                        "workspaceId": "[resourceId(variables('hubRgName'), 'Microsoft.OperationalInsights/workspaces', concat('la-networking-hub-', reference(parameters('hubVnetResourceId'), '2020-05-01', 'Full').location, '-', uniqueString(parameters('hubVnetResourceId'))))]",
                         "logs": [
                             {
                                 "category": "NetworkSecurityGroupEvent",

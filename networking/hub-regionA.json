@@ -434,7 +434,7 @@
                 "copy": [
                     {
                         "name": "ipAddresses",
-                        "count": "[length(parameters('nodepoolSubnetResourceIds'))]",
+                        "count": "[length(parameters('imagebuilderSubnetResourceIds'))]",
                         "input": "[reference(parameters('imagebuilderSubnetResourceIds')[copyIndex('ipAddresses')], '2019-11-01').addressPrefix]"
                     }
                 ]
@@ -942,6 +942,90 @@
                                     ],
                                     "targetFqdns": [
                                         "*.blob.core.windows.net"
+                                    ]
+                                },
+                                {
+                                    "name": "apt-get",
+                                    "description": "This is required as the Packer VMs performs an update/upgrade",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Http",
+                                            "port": 80
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "azure.archive.ubuntu.com",
+                                        "packages.microsoft.com",
+                                        "security.ubunutu.com"
+                                    ]
+                                },
+                                {
+                                    "name": "install-azcli",
+                                    "description": "This is required as the Packer VMs needs to install az cli.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "azurecliprod.blob.core.windows.net"
+                                    ]
+                                },
+                                {
+                                    "name": "install-k8scli",
+                                    "description": "This is required as the Packer VMs needs to install k8s cli tooling.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "storage.googleapis.com",
+                                        "github.com"
+                                    ]
+                                },
+                                {
+                                    "name": "install-helm",
+                                    "description": "This is required as the Packer VMs needs to install helm.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "raw.githubusercontent.com",
+                                        "get.helm.sh"
+                                    ]
+                                },
+                                {
+                                    "name": "install-terraform",
+                                    "description": "This is required as the Packer VMs needs to install terraform.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "releases.hashicorp.com"
                                     ]
                                 }
                             ]

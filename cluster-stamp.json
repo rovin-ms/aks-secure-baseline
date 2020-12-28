@@ -119,6 +119,7 @@
         "vnetInScopeNodePoolSubnetResourceId": "[concat(parameters('targetVnetResourceId'), '/subnets/snet-cluster-inscopenodepools')]",
         "vnetOutOfScopeNodePoolSubnetResourceId": "[concat(parameters('targetVnetResourceId'), '/subnets/snet-cluster-outofscopenodepools')]",
         "vnetIngressServicesSubnetResourceId": "[concat(parameters('targetVnetResourceId'), '/subnets/snet-cluster-ingressservices')]",
+        "vnetManagementOpsSubnetResourceId": "[concat(parameters('targetVnetResourceId'), '/subnets/snet-management-ops')]",
 
         "agwName": "[concat( 'apw-', variables('clusterName')) ]",
         "apwResourceId": "[resourceId('Microsoft.Network/applicationGateways', variables('agwName'))]",
@@ -156,6 +157,47 @@
             "apiVersion": "2018-11-30",
             "location": "[parameters('location')]",
             "comments": "User Managed Identity that App Gateway is assigned. Used for Azure Key Vault Access."
+        },
+        {
+            "name": "aks-jumpbox",
+            "type": "Microsoft.VirtualMachineImages/imageTemplates",
+            "apiVersion": "2020-02-14",
+            "location": "[parameters('location')]",
+            "comments": "This is the image spec for our jumpbox",
+            "dependsOn": [
+
+            ],
+            "identity": {
+                "type": "None"
+            },
+            "properties": {
+                "buildTimeoutInMinutes": 60,
+                "vmProfile": {
+                    "osDiskSizeGB": 0,
+                    "vmSize": "Standard_D1_v2",
+                    "vnetConfig": {
+                        "subnetId": "[variables('vnetManagementOpsSubnetResourceId')]"
+                    }
+                },
+                "source": {
+                    "type": "PlatformImage",
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "18.04-LTS",
+                    "version": "latest"
+                },
+                "distribute": [
+                    {
+                        "type": "ManagedImage",
+                        "runOutputName": "run-output-name",
+                        "imageId": "image-id",
+                        "location": "[parameters('location')]"
+                    }
+                ],
+                "customize": [
+
+                ]
+            }
         },
         /*{
             "name": "podmi-ingress-controller",

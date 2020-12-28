@@ -1049,7 +1049,8 @@
                                         }
                                     ],
                                     "targetFqdns": [
-                                        "releases.hashicorp.com"
+                                        "releases.hashicorp.com",
+                                        "*.s3.amazonaws.com"
                                     ]
                                 }
                             ]

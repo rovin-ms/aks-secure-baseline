@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-endpoint-service
+  labels:
+    app: ingress-endpoint-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+    name: ingress-endpoint-http
+  selector:
+    app: ingress-endpoint 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-endpoint
+spec:
+  selector:
+    matchLabels:
+      app: ingress-endpoint
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ingress-endpoint
+    spec:
+      containers:
+      - name: ingress-endpoint
+        image: farakstest.azurecr.io/simplechainapi
+        ports:
+        - containerPort: 80
+        env:
+        - name: SELF_HOSTS_DEPENDENCIES
+          value: "http://localhost"
+        - name: EXTERNAL_DEPENDENCIES
+          value: https://whatismyip.io/"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"

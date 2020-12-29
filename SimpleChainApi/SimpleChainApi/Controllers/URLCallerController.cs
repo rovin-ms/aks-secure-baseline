@@ -35,11 +35,14 @@ namespace SimpleChainApi.Controllers
         public async Task<DependencyResult> GetAsync(int depth)
         {
             var dependencyResult = new DependencyResult();
-            var client = _clientFactory.CreateClient();
+            if (depth > 0)
+            {
+                var client = _clientFactory.CreateClient();
 
-            await ComputeExternalDependenciesAsync(client, dependencyResult);
+                await ComputeExternalDependenciesAsync(client, dependencyResult);
 
-            await ComputeSelfDependenciesAsync(client, dependencyResult, depth);
+                await ComputeSelfDependenciesAsync(client, dependencyResult, depth);
+            }
 
             return dependencyResult;
         }
@@ -82,7 +85,7 @@ namespace SimpleChainApi.Controllers
                 var result = new List<SelfDependencyCalled>();
                 foreach (var hostPort in hostPortList.Split(','))
                 {
-                    var url = $"https://{hostPort}/URLCaller/depth/{--depth}";
+                    var url = $"{hostPort}/URLCaller/depth/{--depth}";
                     var urlCalledResult = new SelfDependencyCalled { Date = DateTime.Now, URI = url };
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
                     try

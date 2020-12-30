@@ -31,7 +31,7 @@
     "variables": {
         "rgName-Hubs": "rg-enterprise-networking-hubs",
         "rgName-Spokes": "rg-enterprise-networking-spokes",
-        "rgName-bu0001a0008": "rg-bu0001a0008",
+        "rgName-bu0001A0005": "rg-bu0001a0005",
         "policyDefinitionId-AllowedResources": "/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c",
         "policyDefinitionName-EnableAksDefender": "[guid(subscription().id, 'EnableDefenderForAks')]",
         "policyDefinitionName-EnableAcrDefender": "[guid(subscription().id, 'EnableDefenderForAcr')]",
@@ -53,14 +53,14 @@
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2020-10-01",
             "location": "[variables('deploymentResourceRegion')]",
-            "comments": "This contains all of our regional spokes. Typically this would be found in your enterprise's Connectivity subscription or in the workload subscriptions."
+            "comments": "This contains all of our regional spokes. Typically this would be found in your enterprise's Connectivity subscription or in the workload's subscription."
         },
         {
-            "name": "[variables('rgName-bu0001a0008')]",
+            "name": "[variables('rgName-bu0001A0005')]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2020-10-01",
-            "location": "eastus",
-            "comments": "This is the resource group for BU001a0008. Typically this would be found in your workload's subscription."
+            "location": "[variables('deploymentResourceRegion')]",
+            "comments": "This is the resource group for BU001A0005. Typically this would be found in your workload's subscription."
         },
         {
             "name": "[variables('policyDefinitionName-EnableAksDefender')]",
@@ -282,7 +282,7 @@
             }
         },
         {
-            "name": "ApplyCommonHubRgPolicies",
+            "name": "[concat('Apply-', variables('rgName-Hubs'), '-Policies')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-06-01",
             "resourceGroup": "[variables('rgName-Hubs')]",
@@ -331,7 +331,7 @@
             }
         },
         {
-            "name": "ApplyCommonSpokesRgPolicies",
+            "name": "[concat('Apply-', variables('rgName-Spokes'), '-Policies')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-06-01",
             "resourceGroup": "[variables('rgName-Spokes')]",
@@ -366,6 +366,46 @@
                                             "Microsoft.Network/privateDnsZones",
                                             "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
                                             "Microsoft.Network/publicIpAddresses"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+{
+            "name": "[concat('Apply-', variables('rgName-bu0001A0005'), '-Policies')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-06-01",
+            "resourceGroup": "[variables('rgName-bu0001A0005')]",
+            "dependsOn": [
+                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-bu0001A0005'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "parameters": {},
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "name": "[guid(variables('policyDefinitionId-AllowedResources'), variables('rgName-bu0001A0005'))]",
+                            "type": "Microsoft.Authorization/policyAssignments",
+                            "apiVersion": "2020-03-01",
+                            "comments": "Allowed Resources Policy applied to the appliction resource group to only allow select resources per workload requirements.",
+                            "properties": {
+                                "displayName": "[concat('[', variables('rgName-bu0001A0005'), '] ', reference(variables('policyDefinitionId-AllowedResources'), '2020-09-01').displayName)]",
+                                "description": "List of supported resources for our workload resource group",
+                                "scope": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-bu0001A0005'))]",
+                                "policyDefinitionId": "[variables('policyDefinitionId-AllowedResources')]",
+                                "parameters": {
+                                    "listOfResourceTypesAllowed": {
+                                        "value": [
+                                            "Microsoft.ManagedIdentity/userAssignedIdentities",
+                                            "Microsoft.VirtualMachineImages/imageTemplates",
+                                            "Microsoft.Compute/images"
                                         ]
                                     }
                                 }

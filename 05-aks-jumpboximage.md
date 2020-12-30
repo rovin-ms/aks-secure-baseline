@@ -100,4 +100,4 @@ Image building using Azure Image Builder can lend itself well to having transien
 
 ### Next step
 
-:arrow_forward: [Deploy the AKS cluster](./05-aks-cluster.md)
+:arrow_forward: [Deploy the AKS cluster network spoke](./06-cluster-networking.md)

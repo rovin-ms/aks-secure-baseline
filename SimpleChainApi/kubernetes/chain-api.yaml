@@ -34,8 +34,134 @@ spec:
         - containerPort: 80
         env:
         - name: SELF_HOSTS_DEPENDENCIES
-          value: "http://localhost"
+          value: "http://service-a,http://service-b,http://service-c"
         - name: EXTERNAL_DEPENDENCIES
-          value: https://whatismyip.io/"
+          value: "https://whatismyip.io/"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-a
+  labels:
+    app: service-a
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    name: service-a-http
+  selector:
+    app: service-a
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-a
+spec:
+  selector:
+    matchLabels:
+      app: service-a
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: service-a
+    spec:
+      containers:
+      - name: service-a
+        image: farakstest.azurecr.io/simplechainapi
+        ports:
+        - containerPort: 80
+        env:
+        - name: SELF_HOSTS_DEPENDENCIES
+          value: "http://localhost,http://service-b,http://service-c"
+        - name: EXTERNAL_DEPENDENCIES
+          value: "https://whatismyip.io/"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-b
+  labels:
+    app: service-b
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    name: service-a-http
+  selector:
+    app: service-b
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-b
+spec:
+  selector:
+    matchLabels:
+      app: service-b
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: service-b
+    spec:
+      containers:
+      - name: service-b
+        image: farakstest.azurecr.io/simplechainapi
+        ports:
+        - containerPort: 80
+        env:
+        - name: SELF_HOSTS_DEPENDENCIES
+          value: "http://service-a,http://localhost,http://service-c"
+        - name: EXTERNAL_DEPENDENCIES
+          value: "https://whatismyip.io/"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-c
+  labels:
+    app: service-c
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    name: service-a-http
+  selector:
+    app: service-c
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-c
+spec:
+  selector:
+    matchLabels:
+      app: service-c
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: service-c
+    spec:
+      containers:
+      - name: service-c
+        image: farakstest.azurecr.io/simplechainapi
+        ports:
+        - containerPort: 80
+        env:
+        - name: SELF_HOSTS_DEPENDENCIES
+          value: "http://service-a,http://service-b,http://localhost"
+        - name: EXTERNAL_DEPENDENCIES
+          value: "https://whatismyip.io/"
         - name: ASPNETCORE_ENVIRONMENT
           value: "Development"

@@ -79,13 +79,14 @@ namespace SimpleChainApi.Controllers
         private async Task ComputeSelfDependenciesAsync(HttpClient client, DependencyResult dependencyResult, int depth)
         {
             var hostPortList = _configuration[SELF_HOSTS_DEPENDENCIES];
+            var newDepth = depth - 1;
             _logger.LogInformation("URL self dependencies {hostPortList}", hostPortList);
             if (!string.IsNullOrWhiteSpace(hostPortList) && depth > 0)
             {
                 var result = new List<SelfDependencyCalled>();
                 foreach (var hostPort in hostPortList.Split(','))
                 {
-                    var url = $"{hostPort}/URLCaller/depth/{--depth}";
+                    var url = $"{hostPort}/URLCaller/depth/{newDepth}";
                     var urlCalledResult = new SelfDependencyCalled { Date = DateTime.Now, URI = url };
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
                     try

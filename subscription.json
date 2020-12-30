@@ -1,28 +1,16 @@
 {
     "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
-    "variables": {
-        "rgName-Hubs": "rg-enterprise-networking-hubs",
-        "rgName-Spokes": "rg-enterprise-networking-spokes",
-        "rgName-bu0001a0008": "rg-bu0001a0008",
-        "policyDefinitionId-AllowedResources": "/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c",
-        "policyDefinitionName-EnableAksDefender": "[guid(subscription().id, 'EnableDefenderForAks')]",
-        "policyDefinitionName-EnableAcrDefender": "[guid(subscription().id, 'EnableDefenderForAcr')]",
-        "policyDefinitionName-EnableAkvDefender": "[guid(subscription().id, 'EnableDefenderForAkv')]",
-        "policySetDefinitionName-EnableDefender": "[guid(subscription().id, 'EnableDefender')]",
-        "roleId-SecurityAdmin": "/providers/Microsoft.Authorization/roleDefinitions/fb1c8493-542b-48eb-b624-b4c8fea62acd",
-        "deploymentResourceRegion": "centralus" // This region is used as the default for all generic resource groups and for any additional deployment resources. No resources are actually deployed to this resource group.
-    },
     /* Required Permissions 
-     *  - Scope: Subscription
-     *    Role: Contributor
-     *    Reason: Creating resource groups, azure policy definations and assignments
-     *
-     * Optional Permissions
-     *  - Scope: Subscription
-     *    Role: Security Admin (or Owner)
-     *    Reason: To enable Azure Defender for Kubernetes, Container Registry, and Key Vault.
-     *    Notes: If unable to obtain permissions, you must pass false to the enableAzureDefender parameter or have someone else enable these for you.
+        - Scope: Subscription
+          Role: Contributor
+          Reason: Creating resource groups, azure policy definations and assignments
+    
+       Optional Permissions
+        - Scope: Subscription
+          Role: Security Admin (or Owner)
+          Reason: To enable Azure Defender for Kubernetes, Container Registry, and Key Vault.
+          Notes: If unable to obtain permissions, you must pass false to the enableAzureDefender parameter or have someone else enable these for you.
      */
     "parameters": {
         "enforceAzureDefenderAutoDeployPolicies": {
@@ -39,6 +27,18 @@
                 "description": "By default Azure Defender for Kubernetes Service, Container Registry, and Key Vault are enabled; use this parameter to prevent them from being enabled. Deploying these requires subscription Owner or Security Admin roles."
             }
         }
+    },
+    "variables": {
+        "rgName-Hubs": "rg-enterprise-networking-hubs",
+        "rgName-Spokes": "rg-enterprise-networking-spokes",
+        "rgName-bu0001a0008": "rg-bu0001a0008",
+        "policyDefinitionId-AllowedResources": "/providers/Microsoft.Authorization/policyDefinitions/a08ec900-254a-4555-9bf5-e42af04b5c5c",
+        "policyDefinitionName-EnableAksDefender": "[guid(subscription().id, 'EnableDefenderForAks')]",
+        "policyDefinitionName-EnableAcrDefender": "[guid(subscription().id, 'EnableDefenderForAcr')]",
+        "policyDefinitionName-EnableAkvDefender": "[guid(subscription().id, 'EnableDefenderForAkv')]",
+        "policySetDefinitionName-EnableDefender": "[guid(subscription().id, 'EnableDefender')]",
+        "roleId-SecurityAdmin": "/providers/Microsoft.Authorization/roleDefinitions/fb1c8493-542b-48eb-b624-b4c8fea62acd",
+        "deploymentResourceRegion": "centralus" // This region is used as the default for all generic resource groups and for any additional deployment resources. No resources are actually deployed to this resource group.
     },
     "resources": [
         {

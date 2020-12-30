@@ -2,20 +2,7 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "nodepoolSubnetResourceIds": {
-            "type": "array",
-            "metadata": {
-                "description": "Subnet resource Ids for all AKS clusters nodepools in all attached spokes to allow necessary outbound traffic through the firewall"
-            }
-        },
-        "imagebuilderSubnetResourceIds": {
-            "type": "array",
-            "metadata": {
-                "description": "Subnet resource Ids for image builder subnets all in all attached spokes to allow necessary outbound traffic through the firewall"
-            }
-        },
         "location": {
-            "defaultValue": "eastus2",
             "type": "string",
             "allowedValues": [
                 "australiaeast",
@@ -44,7 +31,7 @@
             "maxLength": 18,
             "minLength": 10,
             "metadata": {
-                "description": "A /24 to contain the firewall, management, and gateway subnet"
+                "description": "A /24 to contain the regional firewall, management, and gateway subnet"
             }
         },
         "azureFirewallSubnetAddressSpace": {
@@ -53,7 +40,7 @@
             "maxLength": 18,
             "minLength": 10,
             "metadata": {
-                "description": "A /26 under the VNet Address Space for Azure Firewall"
+                "description": "A /26 under the VNet Address Space for the regional Azure Firewall"
             }
         },
         "azureGatewaySubnetAddressSpace": {
@@ -62,7 +49,7 @@
             "maxLength": 18,
             "minLength": 10,
             "metadata": {
-                "description": "A /27 under the VNet Address Space for our On-Prem Gateway"
+                "description": "A /27 under the VNet Address Space for our regional On-Prem Gateway"
             }
         },
         "azureBastionSubnetAddressSpace": {
@@ -71,27 +58,25 @@
             "maxLength": 18,
             "minLength": 10,
             "metadata": {
-                "description": "A /27 under the VNet Address Space for Azure Bastion"
+                "description": "A /27 under the VNet Address Space for regional Azure Bastion"
             }
         }
     },
     "variables": {
-        "aksIpGroupName": "[concat('ipg-', parameters('location'), '-AksNodepools')]",
-        "imageBuilderIpGroupName": "[concat('ipg-', parameters('location'), '-AksJumpboxImageBuilders')]",
-        "defaultFwPipName": "[concat('pip-fw-', parameters('location'), '-default')]",
+        "defaultFwPipName": "[concat('pip-fw-', parameters('location'))]",
         "bastionPipName": "[concat('pip-ab-', parameters('location'))]",
         "bastionServiceName": "[concat('ab-', parameters('location'))]",
-        "hubFwName": "[concat('fw-', parameters('location'), '-hub')]",
+        "hubFwName": "[concat('fw-', parameters('location'))]",
         "hubVNetName": "[concat('vnet-', parameters('location'), '-hub')]",
         "bastionNetworkNsgName": "[concat('nsg-', parameters('location'), '-bastion')]",
-        "hubLaName": "[concat('la-networking-hub-', parameters('location'),'-',uniqueString(resourceId('Microsoft.Network/virtualNetworks',variables('hubVnetName'))))]",
+        "hubLaName": "[concat('la-hub-', parameters('location'), '-', uniqueString(resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))))]",
         "azureFirewallWorkbook": "{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":1,\"content\":{\"json\":\"## Azure Firewall Workbook\\r\\n---\\r\\n\"},\"name\":\"text - 23\"},{\"type\":11,\"content\":{\"version\":\"LinkItem/1.0\",\"style\":\"tabs\",\"links\":[{\"cellValue\":\"selectedTab\",\"linkTarget\":\"parameter\",\"linkLabel\":\"Azure Firewall Overview\",\"subTarget\":\"AFOverview\",\"preText\":\"Azure Firewall Overview\",\"style\":\"link\"},{\"cellValue\":\"selectedTab\",\"linkTarget\":\"parameter\",\"linkLabel\":\"Azure Firewall - Application rule log statitics\",\"subTarget\":\"AFAppRule\",\"style\":\"link\"},{\"cellValue\":\"selectedTab\",\"linkTarget\":\"parameter\",\"linkLabel\":\"Azure Firewall - Network rule log statistics\",\"subTarget\":\"AFNetRule\",\"style\":\"link\"},{\"cellValue\":\"selectedTab\",\"linkTarget\":\"parameter\",\"linkLabel\":\"Azure Firewall - DNS Proxy\",\"subTarget\":\"AFDNSProxy\",\"style\":\"link\"},{\"cellValue\":\"selectedTab\",\"linkTarget\":\"parameter\",\"linkLabel\":\"Azure Firewall - Investigation\",\"subTarget\":\"AFInvestigate\",\"style\":\"link\"}]},\"name\":\"links - 24\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"crossComponentResources\":[\"value::selected\"],\"parameters\":[{\"id\":\"ab7d6c51-d7df-436c-96a2-429163aa50ec\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"TimeRange\",\"type\":4,\"isRequired\":true,\"value\":{\"durationMs\":2419200000},\"typeSettings\":{\"selectableValues\":[{\"durationMs\":300000},{\"durationMs\":900000},{\"durationMs\":1800000},{\"durationMs\":3600000},{\"durationMs\":14400000},{\"durationMs\":43200000},{\"durationMs\":86400000},{\"durationMs\":172800000},{\"durationMs\":259200000},{\"durationMs\":604800000},{\"durationMs\":1209600000},{\"durationMs\":2419200000},{\"durationMs\":2592000000},{\"durationMs\":5184000000},{\"durationMs\":7776000000}],\"allowCustom\":true}},{\"id\":\"add90eb3-ff5f-4b19-9658-ff15c8043af5\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"Workspaces\",\"type\":5,\"isRequired\":true,\"multiSelect\":true,\"quote\":\"'\",\"delimiter\":\",\",\"query\":\"where type =~ 'microsoft.operationalinsights/workspaces'\\r\\n| project id, name\\r\\n| order by name desc\",\"crossComponentResources\":[\"value::selected\"],\"value\":[\"/subscriptions/REPLACESUBID/resourceGroups/REPLACERG/providers/Microsoft.OperationalInsights/workspaces/REPLACEWORKSPACE\"],\"typeSettings\":{\"additionalResourceOptions\":[\"value::100\"]},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"5084e141-6c56-4d7f-bd8a-09f7ef9af1bc\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"Resource\",\"label\":\"Azure Firewalls\",\"type\":5,\"isRequired\":true,\"multiSelect\":true,\"quote\":\"'\",\"delimiter\":\",\",\"query\":\"where type =~ 'Microsoft.Network/azureFirewalls'\\r\\n| project id, name\",\"crossComponentResources\":[\"value::selected\"],\"value\":[\"/subscriptions/REPLACESUBID/resourceGroups/REPLACERG/providers/Microsoft.Network/azureFirewalls/REPLACEFW\"],\"typeSettings\":{\"additionalResourceOptions\":[\"value::all\"]},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"}],\"style\":\"pills\",\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},\"name\":\"parameters - 1\"},{\"type\":1,\"content\":{\"json\":\"# Azure Firewall - overview\"},\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFOverview\"},\"name\":\"Main title\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| where ResourceType == \\\"AZUREFIREWALLS\\\" \\r\\n| summarize Volume=count() by bin(TimeGenerated, {TimeRange:grain})\",\"size\":0,\"title\":\"Events, by time\",\"noDataMessage\":\"There are no firewall events being feed within the selected workspaces. If you believe the selection is correct, confirm logging has been enabled for the Azure Firewall and feeding into the selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":4,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"timechart\"},\"customWidth\":\"25\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFOverview\"},\"name\":\"query - 16\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| where ResourceType == \\\"AZUREFIREWALLS\\\" \\r\\n| summarize Volume=count() by Resource, bin(TimeGenerated, {TimeRange:grain})\",\"size\":0,\"title\":\"Events, by firewall over time\",\"noDataMessage\":\"There are no firewall events being feed within the selected workspaces. If you believe the selection is correct, confirm logging has been enabled for the Azure Firewall and feeding into the selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":4,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"exportParameterName\":\"TopEvent\",\"exportDefaultValue\":\"{\\\"Resource\\\":\\\"*\\\",\\\"ResourceGroup\\\":\\\"*\\\"}\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"linechart\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"Resource\",\"formatter\":1},\"leftContent\":{\"columnMatch\":\"amount\",\"formatter\":12,\"formatOptions\":{\"palette\":\"auto\"},\"numberFormat\":{\"unit\":17,\"options\":{\"maximumSignificantDigits\":3,\"maximumFractionDigits\":2}}},\"showBorder\":true}},\"customWidth\":\"25\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFOverview\"},\"name\":\"Firewall per Resource Group\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let AFTI = AzureDiagnostics \\r\\n| where ResourceType == \\\"AZUREFIREWALLS\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| where OperationName == \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| summarize Volume=count() by OperationName\\r\\n| project Category=OperationName, Volume;\\r\\nAzureDiagnostics \\r\\n| where ResourceType == \\\"AZUREFIREWALLS\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| summarize Volume=count() by Category\\r\\n| union AFTI\",\"size\":0,\"title\":\"Events, by category\",\"noDataMessage\":\"There are no firewall events being feed within the selected workspaces. If you believe the selection is correct, confirm logging has been enabled for the Azure Firewall and feeding into the selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":4,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"exportFieldName\":\"Category\",\"exportParameterName\":\"SelectedCategory\",\"exportDefaultValue\":\"*\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"piechart\",\"tileSettings\":{\"showBorder\":false,\"titleContent\":{\"columnMatch\":\"Category\",\"formatter\":1},\"leftContent\":{\"columnMatch\":\"Volume\",\"formatter\":12,\"formatOptions\":{\"palette\":\"auto\"},\"numberFormat\":{\"unit\":17,\"options\":{\"maximumSignificantDigits\":3,\"maximumFractionDigits\":2}}}}},\"customWidth\":\"25\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFOverview\"},\"name\":\"Events by category\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let AFTI = AzureDiagnostics \\r\\n| where ResourceType == \\\"AZUREFIREWALLS\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| where OperationName == \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| summarize Volume=count() by OperationName, bin(TimeGenerated, {TimeRange:grain})\\r\\n| project Category=OperationName, Volume, TimeGenerated;\\r\\nAzureDiagnostics \\r\\n| where ResourceType == \\\"AZUREFIREWALLS\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| summarize Volume=count() by Category, bin(TimeGenerated, {TimeRange:grain})\\r\\n| union AFTI\",\"size\":0,\"title\":\"Events categories, by time\",\"noDataMessage\":\"There are no firewall events being feed within the selected workspaces. If you believe the selection is correct, confirm logging has been enabled for the Azure Firewall and feeding into the selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":4,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"timechart\"},\"customWidth\":\"25\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFOverview\"},\"name\":\"Events categories by time\"},{\"type\":10,\"content\":{\"chartId\":\"workbook76864ed5-dd34-42d0-ae35-f3db9f9e8f15\",\"version\":\"MetricsItem/2.0\",\"size\":0,\"chartType\":2,\"resourceType\":\"microsoft.network/azurefirewalls\",\"metricScope\":0,\"resourceParameter\":\"Resource\",\"resourceIds\":[\"{Resource}\"],\"timeContextFromParameter\":\"TimeRange\",\"timeContext\":{\"durationMs\":2419200000},\"metrics\":[{\"namespace\":\"microsoft.network/azurefirewalls\",\"metric\":\"microsoft.network/azurefirewalls--Throughput\",\"aggregation\":4,\"splitBy\":null,\"columnName\":\"All Firewall Throughput Average\"}],\"title\":\"Average Throughput of Firewall Traffic\",\"gridSettings\":{\"rowLimit\":10000}},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFOverview\"},\"name\":\"metric - 25\"},{\"type\":10,\"content\":{\"chartId\":\"workbook76864ed5-dd34-42d0-ae35-f3db9f9e8f15\",\"version\":\"MetricsItem/2.0\",\"size\":0,\"chartType\":2,\"resourceType\":\"microsoft.network/azurefirewalls\",\"metricScope\":0,\"resourceParameter\":\"Resource\",\"resourceIds\":[\"{Resource}\"],\"timeContextFromParameter\":\"TimeRange\",\"timeContext\":{\"durationMs\":2419200000},\"metrics\":[{\"namespace\":\"microsoft.network/azurefirewalls\",\"metric\":\"microsoft.network/azurefirewalls--SNATPortUtilization\",\"aggregation\":4,\"splitBy\":null}],\"title\":\"SNAT Port Utilization\",\"gridSettings\":{\"rowLimit\":10000}},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFOverview\"},\"name\":\"metric - 25 - Copy\"},{\"type\":10,\"content\":{\"chartId\":\"workbook76864ed5-dd34-42d0-ae35-f3db9f9e8f15\",\"version\":\"MetricsItem/2.0\",\"size\":0,\"chartType\":2,\"resourceType\":\"microsoft.network/azurefirewalls\",\"metricScope\":0,\"resourceParameter\":\"Resource\",\"resourceIds\":[\"{Resource}\"],\"timeContextFromParameter\":\"TimeRange\",\"timeContext\":{\"durationMs\":2419200000},\"metrics\":[{\"namespace\":\"microsoft.network/azurefirewalls\",\"metric\":\"microsoft.network/azurefirewalls--NetworkRuleHit\",\"aggregation\":1,\"splitBy\":null}],\"title\":\"Network Rule Hitcount (SUM)\",\"gridSettings\":{\"rowLimit\":10000}},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFOverview\"},\"name\":\"metric - 25 - Copy - Copy\"},{\"type\":10,\"content\":{\"chartId\":\"workbook76864ed5-dd34-42d0-ae35-f3db9f9e8f15\",\"version\":\"MetricsItem/2.0\",\"size\":0,\"chartType\":2,\"resourceType\":\"microsoft.network/azurefirewalls\",\"metricScope\":0,\"resourceParameter\":\"Resource\",\"resourceIds\":[\"{Resource}\"],\"timeContextFromParameter\":\"TimeRange\",\"timeContext\":{\"durationMs\":2419200000},\"metrics\":[{\"namespace\":\"microsoft.network/azurefirewalls\",\"metric\":\"microsoft.network/azurefirewalls--ApplicationRuleHit\",\"aggregation\":1,\"splitBy\":null}],\"title\":\"Application Rule Hitcount (SUM)\",\"gridSettings\":{\"rowLimit\":10000}},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFOverview\"},\"name\":\"metric - 25 - Copy - Copy - Copy\"},{\"type\":1,\"content\":{\"json\":\"---\\r\\n# Azure Firewall - Application rule log statitics\"},\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFAppRule\"},\"name\":\"text - 14\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"let ActivityData = AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallApplicationRule\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails\\r\\n| parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1\\r\\n| parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" *\\r\\n| parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a\\r\\n| parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b\\r\\n| extend SourcePort = tostring(SourcePortInt)\\r\\n| extend TargetPort = tostring(TargetPortInt)\\r\\n| extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\")\\r\\n| extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\"N/A\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\"No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\"N/A\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort)\\r\\n| where Action == \\\"Deny\\\";\\r\\nActivityData\\r\\n| summarize Amount=count() by SourceIP\\r\\n| join kind = inner\\r\\n(\\r\\n    ActivityData\\r\\n    | make-series Trend = count() default = 0 on bin(TimeGenerated, 1d) from {TimeRange:start} to {TimeRange:end} step {TimeRange:grain} by SourceIP) on SourceIP\\r\\n    | project-away SourceIP1, TimeGenerated\\r\\n    | top 10 by Amount\\r\\n    | sort by Amount\",\"size\":1,\"title\":\"Unique Source IP addresses, filterable by SelectedSourceIP\",\"noDataMessage\":\"There are no Application Rule logs within the selected workspaces. If you believe the selection is correct, confirm Application Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"exportFieldName\":\"SourceIP\",\"exportParameterName\":\"SelectedSourceIP\",\"exportDefaultValue\":\"*\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"tiles\",\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"Amount\",\"formatter\":12,\"formatOptions\":{\"showIcon\":true}},\"subtitleContent\":{\"columnMatch\":\"SourceIP\",\"formatter\":1,\"formatOptions\":{\"showIcon\":true}},\"secondaryContent\":{\"columnMatch\":\"Trend\",\"formatter\":9,\"formatOptions\":{\"showIcon\":true}},\"showBorder\":false}},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFAppRule\"},\"name\":\"query - 4\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallApplicationRule\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails \\r\\n| parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1 \\r\\n| parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" *\\r\\n| parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a \\r\\n| parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b \\r\\n| extend SourcePort = tostring(SourcePortInt) \\r\\n| where '{SelectedSourceIP}' == SourceIP or '{SelectedSourceIP}' == \\\"*\\\" \\r\\n| extend TargetPort = tostring(TargetPortInt) \\r\\n| extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\") \\r\\n| extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\" default action\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\" No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\" default action\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\" default action\\\", TargetPort)\\r\\n| summarize Count = count(), last_log = datetime_diff(\\\"second\\\",now(), max(TimeGenerated)) by RuleCollection, Rule\\r\\n\\r\\n\\r\\n\",\"size\":1,\"title\":\"Application Rule Usage\",\"noDataMessage\":\"There are no Application Rule logs within the selected workspaces. If you believe the selection is correct, confirm Application Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"Count\",\"formatter\":8,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":false,\"maximumSignificantDigits\":4}}},{\"columnMatch\":\"last_log\",\"formatter\":8,\"formatOptions\":{\"palette\":\"greenRed\"},\"numberFormat\":{\"unit\":24,\"options\":{\"style\":\"decimal\",\"useGrouping\":false}}}]}},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFAppRule\"},\"name\":\"query - 36\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics | where Category == \\\"AzureFirewallApplicationRule\\\" \\r\\n| where Resource in (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails | parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1 | parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" * | parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a | parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b | extend SourcePort = tostring(SourcePortInt) | extend TargetPort = tostring(TargetPortInt) | extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\") | extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\"N/A\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\"No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\"N/A\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort)| where Action == \\\"Deny\\\"\\r\\n| where '{SelectedSourceIP}' == SourceIP or '{SelectedSourceIP}' == \\\"*\\\"  \\r\\n| summarize count() by FQDN, bin(TimeGenerated,{TimeRange:grain})\",\"size\":0,\"title\":\"Denied FDQN's over time\",\"noDataMessage\":\"There are no Application Rule logs within the selected workspaces. If you believe the selection is correct, confirm Application Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"timechart\",\"tileSettings\":{\"showBorder\":false}},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFAppRule\"},\"name\":\"query - 3\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallApplicationRule\\\"\\r\\n| where Resource in (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails \\r\\n| parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1 \\r\\n| parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" * \\r\\n| parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a \\r\\n| parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b \\r\\n| extend SourcePort = tostring(SourcePortInt) \\r\\n| extend TargetPort = tostring(TargetPortInt) \\r\\n| extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\") \\r\\n| extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\"N/A\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\"No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\"N/A\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort)\\r\\n| where Action == \\\"Deny\\\"\\r\\n| where '{SelectedSourceIP}' == SourceIP or '{SelectedSourceIP}' == \\\"*\\\"  \\r\\n| summarize count() by FQDN\\r\\n| sort by count_ desc\\r\\n\",\"size\":0,\"showAnalytics\":true,\"title\":\"Denied FDQN's by count\",\"noDataMessage\":\"There are no Application Rule logs within the selected workspaces. If you believe the selection is correct, confirm Application Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"showExportToExcel\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"table\",\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"count_\",\"formatter\":8,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":false,\"maximumSignificantDigits\":4}}}]}},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFAppRule\"},\"name\":\"query - 7\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallApplicationRule\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails \\r\\n| parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1 \\r\\n| parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" * \\r\\n| parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a \\r\\n| parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b \\r\\n| extend SourcePort = tostring(SourcePortInt)\\r\\n| where '{SelectedSourceIP}' == SourceIP or '{SelectedSourceIP}' == \\\"*\\\"   \\r\\n| extend TargetPort = tostring(TargetPortInt)\\r\\n| extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\") \\r\\n| extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\"N/A\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\"No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\"N/A\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort) \\r\\n| where Action == \\\"Allow\\\"\\r\\n| summarize count() by FQDN, bin(TimeGenerated,{TimeRange:grain})\\r\\n\",\"size\":0,\"title\":\"Allowed FDQN's over time\",\"noDataMessage\":\"There are no Application Rule logs within the selected workspaces. If you believe the selection is correct, confirm Application Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"timechart\"},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFAppRule\"},\"name\":\"query - 5\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallApplicationRule\\\" \\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails | parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1 | parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" * | parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a | parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b | extend SourcePort = tostring(SourcePortInt) | extend TargetPort = tostring(TargetPortInt) | extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\") | extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\"N/A\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\"No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\"N/A\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort) | where Action == \\\"Allow\\\"\\r\\n| where '{SelectedSourceIP}' == SourceIP or '{SelectedSourceIP}' == \\\"*\\\"   \\r\\n| summarize count() by FQDN\\r\\n| sort by count_ desc\",\"size\":0,\"showAnalytics\":true,\"title\":\"Allowed FDQN's by count\",\"noDataMessage\":\"There are no Application Rule logs within the selected workspaces. If you believe the selection is correct, confirm Application Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"showExportToExcel\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"table\",\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"count_\",\"formatter\":8,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":false,\"maximumSignificantDigits\":4}}}]},\"sortBy\":[]},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFAppRule\"},\"name\":\"query - 2\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallApplicationRule\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails \\r\\n| parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1 \\r\\n| parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" * \\r\\n| parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a \\r\\n| parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b\\r\\n| parse msg_s with Protocol_s 'request from ' SourceHost_s ':' SourcePort_s 'to ' DestinationHost_s ':' DestinationPort_s 'was' Action_s 'to' DNATDestination\\r\\n| parse msg_s with Protocol_S 'request from ' SourceHost_S ':' SourcePort_S 'to ' DestinationHost_S ':' DestinationPort_S '. Action:' Action_S\\r\\n| extend Protocol = strcat(Protocol_s, Protocol_S), SourceHost = strcat(SourceHost_s, SourceHost_S),SourcePort = strcat(SourcePort_s, SourcePort_S), DestinationHost = strcat(DestinationHost_s, DestinationHost_S), DestinationPort = strcat(DestinationPort_s, DestinationPort_S), Action = strcat(Action_s, Action_S)\\r\\n| extend SourcePort = tostring(SourcePortInt) \\r\\n| extend TargetPort = tostring(TargetPortInt)\\r\\n| extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\") \\r\\n| extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\" default action\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\"No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\" default action\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\" default action\\\", TargetPort)\\r\\n| where '{SelectedSourceIP}' == SourceIP or '{SelectedSourceIP}' == \\\"*\\\"  \\r\\n| summarize by TimeGenerated, FQDN, Protocol, Action, SourceIP, SourcePort, TargetPort, SourceHost , DestinationPort , ResourceId , ResourceGroup , RuleCollection, Rule, SubscriptionId\\r\\n\",\"size\":0,\"showAnalytics\":true,\"title\":\"All IP addresses events\",\"noDataMessage\":\"There are no Application Rule logs within the selected workspaces. If you believe the selection is correct, confirm Application Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"showExportToExcel\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"filter\":true}},\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFAppRule\"},\"name\":\"query - 9\"},{\"type\":1,\"content\":{\"json\":\"---\\r\\n# Azure Firewall - Network rule log statistics\"},\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFNetRule\"},\"name\":\"text - 14\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallNetworkRule\\\"\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" to \\\" TargetIP \\\":\\\" TargetPortInt:int * \\r\\n| parse msg_s with * \\\". Action: \\\" Action1a \\r\\n| parse msg_s with * \\\"was \\\" Action1b \\\" to \\\" NatDestination \\r\\n| parse msg_s with Protocol2 \\\" request from \\\" SourceIP2 \\\" to \\\" TargetIP2 \\\". Action:\\\" Action2 \\r\\n| extend SourcePort = tostring(SourcePortInt),TargetPort = tostring(TargetPortInt) \\r\\n| extend Action = case(Action1a == \\\"\\\", case(Action1b == \\\"\\\",Action2,Action1b), Action1a),Protocol = case(Protocol == \\\"\\\", Protocol2, Protocol),SourceIP = case(SourceIP == \\\"\\\", SourceIP2, SourceIP),TargetIP = case(TargetIP == \\\"\\\", TargetIP2, TargetIP),SourcePort = case(SourcePort == \\\"\\\", \\\"N/A\\\", SourcePort),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort),NatDestination = case(NatDestination == \\\"\\\", \\\"N/A\\\", NatDestination)  \\r\\n| summarize count() by Action\",\"size\":3,\"title\":\"Rule actions, filterable by RuleAction\",\"noDataMessage\":\"There are no Network Rule logs within the selected workspaces. If you believe the selection is correct, confirm Network Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"exportFieldName\":\"series\",\"exportParameterName\":\"RuleAction\",\"exportDefaultValue\":\"*\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"piechart\"},\"customWidth\":\"33\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFNetRule\"},\"name\":\"query - 7\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallNetworkRule\\\"\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" to \\\" TargetIP \\\":\\\" TargetPortInt:int * \\r\\n| parse msg_s with * \\\". Action: \\\" Action1a \\r\\n| parse msg_s with * \\\"was \\\" Action1b \\\" to \\\" NatDestination \\r\\n| parse msg_s with Protocol2 \\\" request from \\\" SourceIP2 \\\" to \\\" TargetIP2 \\\". Action: \\\" Action2 \\r\\n| extend SourcePort = tostring(SourcePortInt),TargetPort = tostring(TargetPortInt) \\r\\n| extend Action = case(Action1a == \\\"\\\", case(Action1b == \\\"\\\",Action2,Action1b), Action1a),Protocol = case(Protocol == \\\"\\\", Protocol2, Protocol),SourceIP = case(SourceIP == \\\"\\\", SourceIP2, SourceIP),TargetIP = case(TargetIP == \\\"\\\", TargetIP2, TargetIP),SourcePort = case(SourcePort == \\\"\\\", \\\"N/A\\\", SourcePort),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort), NatDestination = case(NatDestination == \\\"\\\", \\\"N/A\\\", NatDestination)  \\r\\n| summarize Count=count() by TargetPort\",\"size\":3,\"title\":\"Target ports, filterable by TargetPort\",\"noDataMessage\":\"There are no Network Rule logs within the selected workspaces. If you believe the selection is correct, confirm Network Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"exportFieldName\":\"series\",\"exportParameterName\":\"TargetPort\",\"exportDefaultValue\":\"*\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"piechart\"},\"customWidth\":\"33\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFNetRule\"},\"name\":\"query - 10\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallNetworkRule\\\"\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" to \\\" TargetIP \\\":\\\" TargetPortInt:int * \\r\\n| parse msg_s with * \\\". Action: \\\" Action1a \\r\\n| parse msg_s with * \\\"was \\\" Action1b \\\" to \\\" NatDestination\\r\\n| parse msg_s with Protocol2 \\\" request from \\\" SourceIP2 \\\" to \\\" TargetIP2 \\\". Action:\\\" Action2 \\r\\n| extend SourcePort = tostring(SourcePortInt),TargetPort = tostring(TargetPortInt) \\r\\n| extend Action = case(Action1a == \\\"\\\", \\r\\ncase(Action1b == \\\"\\\",Action2,Action1b), Action1a),\\r\\nProtocol = case(Protocol == \\\"\\\", Protocol2, Protocol),\\r\\nSourceIP = case(SourceIP == \\\"\\\", SourceIP2, SourceIP),\\r\\nTargetIP = case(TargetIP == \\\"\\\", TargetIP2, TargetIP),\\r\\nSourcePort = case(SourcePort == \\\"\\\", \\\"N/A\\\", SourcePort),\\r\\nTargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort),\\r\\nNatDestination = case(NatDestination == \\\"\\\", \\\"N/A\\\", NatDestination)  \\r\\n| where Action == \\\"DNAT'ed\\\"\\r\\n| summarize Amount=count() by NatDestination\\r\\n\",\"size\":3,\"title\":\"DNAT actions, filterable by NatDestination\",\"noDataMessage\":\"There are no Network Rule logs within the selected workspaces. If you believe the selection is correct, confirm Network Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"exportFieldName\":\"series\",\"exportParameterName\":\"NatDestination\",\"exportDefaultValue\":\"*\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"piechart\"},\"customWidth\":\"33\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFNetRule\"},\"name\":\"query - 12\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallNetworkRule\\\"\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" to \\\" TargetIP \\\":\\\" TargetPortInt:int * \\r\\n| parse msg_s with * \\\". Action: \\\" Action1a \\r\\n| parse msg_s with * \\\"was \\\" Action1b \\\" to \\\" NatDestination\\r\\n| parse msg_s with Protocol2 \\\" request from \\\" SourceIP2 \\\" to \\\" TargetIP2 \\\". Action:\\\" Action2 \\r\\n| extend SourcePort = tostring(SourcePortInt),TargetPort = tostring(TargetPortInt) \\r\\n| extend Action = case(Action1a == \\\"\\\", \\r\\ncase(Action1b == \\\"\\\",Action2,Action1b), Action1a),\\r\\nProtocol = case(Protocol == \\\"\\\", Protocol2, Protocol),\\r\\nSourceIP = case(SourceIP == \\\"\\\", SourceIP2, SourceIP),\\r\\nTargetIP = case(TargetIP == \\\"\\\", TargetIP2, TargetIP),\\r\\nSourcePort = case(SourcePort == \\\"\\\", \\\"N/A\\\", SourcePort),\\r\\nTargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort),\\r\\nNatDestination = case(NatDestination == \\\"\\\", \\\"N/A\\\", NatDestination)\\r\\n//| extend Action = iif(Action contains \\\"DNAT'ed\\\", Action=\\\"Nah\\\", Action)\\r\\n| where '{TargetPort}' == TargetPort or '{TargetPort}' == \\\"*\\\"\\r\\n| where \\\"{RuleAction}\\\" == Action or \\\"{RuleAction}\\\" == \\\"*\\\"\\r\\n| where '{NatDestination}' == NatDestination or '{NatDestination}' == \\\"*\\\" \\r\\n| summarize amount = count() by Action , SourceIP\\r\\n| sort by amount desc\",\"size\":0,\"title\":\"Rule actions, by IP addresses\",\"noDataMessage\":\"There are no Network Rule logs within the selected workspaces. If you believe the selection is correct, confirm Network Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"table\",\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"Action\",\"formatter\":5},{\"columnMatch\":\"amount\",\"formatter\":3,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"maximumSignificantDigits\":4}}},{\"columnMatch\":\"eventCount\",\"formatter\":3,\"formatOptions\":{\"min\":0,\"palette\":\"blue\"}}],\"rowLimit\":10000,\"filter\":true,\"hierarchySettings\":{\"treeType\":1,\"groupBy\":[\"Action\"],\"expandTopLevel\":false,\"finalBy\":\"Action\"}}},\"customWidth\":\"33\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFNetRule\"},\"name\":\"query - 8\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallNetworkRule\\\"\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" to \\\" TargetIP \\\":\\\" TargetPortInt:int * \\r\\n| parse msg_s with * \\\". Action: \\\" Action1a \\r\\n| parse msg_s with * \\\"was \\\" Action1b \\\" to \\\" NatDestination \\r\\n| parse msg_s with Protocol2 \\\" request from \\\" SourceIP2 \\\" to \\\" TargetIP2 \\\". Action: \\\" Action2 \\r\\n| extend SourcePort = tostring(SourcePortInt),TargetPort = tostring(TargetPortInt) \\r\\n| extend Action = case(Action1a == \\\"\\\", \\r\\ncase(Action1b == \\\"\\\",Action2,Action1b), Action1a),Protocol = case(Protocol == \\\"\\\", \\r\\nProtocol2, Protocol),SourceIP = case(SourceIP == \\\"\\\", SourceIP2, SourceIP),\\r\\nTargetIP = case(TargetIP == \\\"\\\", TargetIP2, TargetIP),\\r\\nSourcePort = case(SourcePort == \\\"\\\", \\\"N/A\\\", SourcePort),\\r\\nTargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort), \\r\\nNatDestination = case(NatDestination == \\\"\\\", \\r\\n\\\"N/A\\\", NatDestination)\\r\\n| where '{TargetPort}' == TargetPort or '{TargetPort}' == \\\"*\\\"\\r\\n| where \\\"{RuleAction}\\\" == Action or \\\"{RuleAction}\\\" == \\\"*\\\"\\r\\n| where '{NatDestination}' == NatDestination or '{NatDestination}' == \\\"*\\\"   \\r\\n| summarize AMOUNT=count() by TargetPort, SourceIP\\r\\n| sort by AMOUNT desc\",\"size\":0,\"title\":\"Target ports, by Source IP\",\"noDataMessage\":\"There are no Network Rule logs within the selected workspaces. If you believe the selection is correct, confirm Network Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"TargetPort\",\"formatter\":5},{\"columnMatch\":\"AMOUNT\",\"formatter\":3,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":false,\"maximumSignificantDigits\":4}}}],\"rowLimit\":10000,\"filter\":true,\"hierarchySettings\":{\"treeType\":1,\"groupBy\":[\"TargetPort\"],\"finalBy\":\"TargetPort\"}}},\"customWidth\":\"33\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFNetRule\"},\"name\":\"query - 11\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallNetworkRule\\\"\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" to \\\" TargetIP \\\":\\\" TargetPortInt:int * \\r\\n| parse msg_s with * \\\". Action: \\\" Action1a \\r\\n| parse msg_s with * \\\"was \\\" Action1b \\\" to \\\" NatDestination\\r\\n| parse msg_s with Protocol2 \\\" request from \\\" SourceIP2 \\\" to \\\" TargetIP2 \\\". Action:\\\" Action2 \\r\\n| extend SourcePort = tostring(SourcePortInt),TargetPort = tostring(TargetPortInt) \\r\\n| extend Action = case(Action1a == \\\"\\\", \\r\\ncase(Action1b == \\\"\\\",Action2,Action1b), Action1a),\\r\\nProtocol = case(Protocol == \\\"\\\", Protocol2, Protocol),\\r\\nSourceIP = case(SourceIP == \\\"\\\", SourceIP2, SourceIP),\\r\\nTargetIP = case(TargetIP == \\\"\\\", TargetIP2, TargetIP),\\r\\nSourcePort = case(SourcePort == \\\"\\\", \\\"N/A\\\", SourcePort),\\r\\nTargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort),\\r\\nNatDestination = case(NatDestination == \\\"\\\", \\\"N/A\\\", NatDestination)  \\r\\n| where Action == \\\"DNAT'ed\\\"\\r\\n| where '{TargetPort}' == TargetPort or '{TargetPort}' == \\\"*\\\"\\r\\n| where \\\"{RuleAction}\\\" == Action or \\\"{RuleAction}\\\" == \\\"*\\\"\\r\\n| where '{NatDestination}' == NatDestination or '{NatDestination}' == \\\"*\\\"\\r\\n| summarize Amount=count() by NatDestination, TimeGenerated\\r\\n\",\"size\":0,\"title\":\"DNAT'ed over time\",\"noDataMessage\":\"There are no Network Rule logs within the selected workspaces. If you believe the selection is correct, confirm Network Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"timechart\"},\"customWidth\":\"33\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFNetRule\"},\"name\":\"query - 13\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallNetworkRule\\\"\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from\\\" SourceIP \\\":\\\" SourcePortInt:int \\\" to\\\" TargetIP \\\":\\\" TargetPortInt:int *\\r\\n| parse msg_s with * \\\". Action: \\\" Action1a\\r\\n| parse msg_s with * \\\" was \\\" Action1b \\\" to \\\" NatDestination\\r\\n| parse msg_s with Protocol2 \\\" request from\\\" SourceIP2 \\\" to\\\" TargetIP2 \\\". Action:\\\" Action2\\r\\n| extend SourcePort = tostring(SourcePortInt),TargetPort = tostring(TargetPortInt)\\r\\n| extend Action = case(Action1a == \\\"\\\", case(Action1b == \\\"\\\",Action2,Action1b), Action1a),Protocol = case(Protocol == \\\"\\\", Protocol2, Protocol),SourceIP = case(SourceIP == \\\"\\\", SourceIP2, SourceIP),TargetIP = case(TargetIP == \\\"\\\", TargetIP2, TargetIP),SourcePort = case(SourcePort == \\\"\\\", \\\"N/A\\\", SourcePort),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort),NatDestination = case(NatDestination == \\\"\\\", \\\"N/A\\\", NatDestination)\\r\\n| where '{TargetPort}' == TargetPort or '{TargetPort}' == \\\"*\\\"\\r\\n| where \\\"{RuleAction}\\\" == Action or \\\"{RuleAction}\\\" == \\\"*\\\"\\r\\n| where '{NatDestination}' == NatDestination or '{NatDestination}' == \\\"*\\\"\\r\\n| summarize count() by Action, bin(TimeGenerated, {TimeRange:grain})\\r\\n\",\"size\":0,\"title\":\"Actions, by time\",\"noDataMessage\":\"There are no Network Rule logs within the selected workspaces. If you believe the selection is correct, confirm Network Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"timeBrushParameterName\":\"ActionsByTimeBrush\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"timechart\"},\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFNetRule\"},\"name\":\"query - 15\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallNetworkRule\\\"\\r\\n| where OperationName <> \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from\\\" SourceIP \\\":\\\" SourcePortInt:int \\\" to\\\" TargetIP \\\":\\\" TargetPortInt:int *\\r\\n| parse msg_s with * \\\". Action: \\\" Action1a\\r\\n| parse msg_s with * \\\" was \\\" Action1b \\\" to \\\" NatDestination\\r\\n| parse msg_s with Protocol2 \\\" request from\\\" SourceIP2 \\\" to\\\" TargetIP2 \\\". Action:\\\" Action2\\r\\n| parse msg_s with Protocol_s 'request from ' SourceHost_s ':' SourcePort_s 'to ' DestinationHost_s ':' DestinationPort_s 'was' Action_s 'to' DNATDestination\\r\\n| parse msg_s with Protocol_S 'request from ' SourceHost_S ':' SourcePort_S 'to ' DestinationHost_S ':' DestinationPort_S '. Action:' Action_S\\r\\n| extend Protocol = strcat(Protocol_s, Protocol_S), SourceHost = strcat(SourceHost_s, SourceHost_S),SourcePort = strcat(SourcePort_s, SourcePort_S), DestinationHost = strcat(DestinationHost_s, DestinationHost_S), DestinationPort = strcat(DestinationPort_s, DestinationPort_S), Action = strcat(Action_s, Action_S)\\r\\n| extend SourcePort = tostring(SourcePortInt),TargetPort = tostring(TargetPortInt)\\r\\n| extend Action = case(Action1a == \\\"\\\", case(Action1b == \\\"\\\",Action2,Action1b), Action1a),Protocol = case(Protocol == \\\"\\\", Protocol2, Protocol),SourceIP = case(SourceIP == \\\"\\\", SourceIP2, SourceIP),TargetIP = case(TargetIP == \\\"\\\", TargetIP2, TargetIP),SourcePort = case(SourcePort == \\\"\\\", \\\"N/A\\\", SourcePort),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort),NatDestination = case(NatDestination == \\\"\\\", \\\"N/A\\\", NatDestination)\\r\\n| where '{TargetPort}' == TargetPort or '{TargetPort}' == \\\"*\\\"\\r\\n| where \\\"{RuleAction}\\\" == Action or \\\"{RuleAction}\\\" == \\\"*\\\"\\r\\n| where '{NatDestination}' == NatDestination or '{NatDestination}' == \\\"*\\\"\\r\\n| summarize by TimeGenerated,Protocol, Action, SourcePort, TargetPort, SourceHost , DestinationHost , DestinationPort , NatDestination, ResourceId , ResourceGroup , SubscriptionId\",\"size\":0,\"showAnalytics\":true,\"title\":\"All IP addresses events\",\"noDataMessage\":\"There are no Network Rule logs within the selected workspaces. If you believe the selection is correct, confirm Network Rule logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":0},\"timeContextFromParameter\":\"ActionsByTimeBrush\",\"showExportToExcel\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"filter\":true}},\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFNetRule\"},\"name\":\"query - 22\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallDnsProxy\\\"\\r\\n| parse msg_s with \\\"DNS Request: \\\" ClientIP \\\":\\\" ClientPort \\\" - \\\" QueryID \\\" \\\" Request_Type \\\" \\\" Request_Class \\\" \\\" Request_Name \\\". \\\" Request_Protocol \\\" \\\" Request_Size \\\" \\\" EDNSO_DO \\\" \\\" EDNS0_Buffersize \\\" \\\" Responce_Code \\\" \\\" Responce_Flags \\\" \\\" Responce_Size \\\" \\\" Response_Duration\\r\\n| project-away msg_s\\r\\n| summarize count() by Resource, bin(TimeGenerated,{TimeRange:grain})\\r\\n\",\"size\":0,\"title\":\"DNSProxy Traffic by count per Firewall\",\"noDataMessage\":\"There are no DNS Proxy logs within the selected workspaces. If you believe the selection is correct, confirm DNS Proxy logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"timeBrushParameterName\":\"DNSTimeBrush\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"linechart\",\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"count_\",\"formatter\":8,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":false,\"maximumSignificantDigits\":4}}}]}},\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFDNSProxy\"},\"name\":\"query - 30 - Copy - Copy\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallDnsProxy\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with \\\"DNS Request: \\\" ClientIP \\\":\\\" ClientPort \\\" - \\\" QueryID \\\" \\\" Request_Type \\\" \\\" Request_Class \\\" \\\" Request_Name \\\". \\\" Request_Protocol \\\" \\\" Request_Size \\\" \\\" EDNSO_DO \\\" \\\" EDNS0_Buffersize \\\" \\\" Responce_Code \\\" \\\" Responce_Flags \\\" \\\" Responce_Size \\\" \\\" Response_Duration\\r\\n| project-away msg_s\\r\\n| summarize count() by Request_Name\\r\\n| sort by count_ desc\",\"size\":0,\"title\":\"DNSProxy count by Request Name, filterable by Request_Name\",\"noDataMessage\":\"There are no DNS Proxy logs within the selected workspaces. If you believe the selection is correct, confirm DNS Proxy logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":0},\"timeContextFromParameter\":\"DNSTimeBrush\",\"exportFieldName\":\"Request_Name\",\"exportParameterName\":\"DNSRequestName\",\"exportDefaultValue\":\"*\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"count_\",\"formatter\":8,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":false,\"maximumSignificantDigits\":4}}}]}},\"customWidth\":\"25\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFDNSProxy\"},\"name\":\"query - 30 - Copy\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallDnsProxy\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with \\\"DNS Request: \\\" ClientIP \\\":\\\" ClientPort \\\" - \\\" QueryID \\\" \\\" Request_Type \\\" \\\" Request_Class \\\" \\\" Request_Name \\\". \\\" Request_Protocol \\\" \\\" Request_Size \\\" \\\" EDNSO_DO \\\" \\\" EDNS0_Buffersize \\\" \\\" Responce_Code \\\" \\\" Responce_Flags \\\" \\\" Responce_Size \\\" \\\" Response_Duration\\r\\n| project-away msg_s\\r\\n| where '{DNSRequestName}' == Request_Name or '{DNSRequestName}' == \\\"*\\\"\\r\\n| summarize count() by ClientIP\\r\\n| sort by count_ desc\",\"size\":0,\"title\":\"DNSProxy Request count by ClientIP, filterable by ClientIP\",\"noDataMessage\":\"There are no DNS Proxy logs within the selected workspaces. If you believe the selection is correct, confirm DNS Proxy logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":0},\"timeContextFromParameter\":\"DNSTimeBrush\",\"exportFieldName\":\"ClientIP\",\"exportParameterName\":\"DNSClientIP\",\"exportDefaultValue\":\"*\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"count_\",\"formatter\":8,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":false,\"maximumSignificantDigits\":4}}}]}},\"customWidth\":\"25\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFDNSProxy\"},\"name\":\"query - 30 - Copy\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallDnsProxy\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with \\\"DNS Request: \\\" ClientIP \\\":\\\" ClientPort \\\" - \\\" QueryID \\\" \\\" Request_Type \\\" \\\" Request_Class \\\" \\\" Request_Name \\\". \\\" Request_Protocol \\\" \\\" Request_Size \\\" \\\" EDNSO_DO \\\" \\\" EDNS0_Buffersize \\\" \\\" Responce_Code \\\" \\\" Responce_Flags \\\" \\\" Responce_Size \\\" \\\" Response_Duration\\r\\n| project-away msg_s\\r\\n| where '{DNSClientIP}' == ClientIP or '{DNSClientIP}' == \\\"*\\\"\\r\\n| where '{DNSRequestName}' == Request_Name or '{DNSRequestName}' == \\\"*\\\"\\r\\n| summarize count() by ClientIP, bin(TimeGenerated, {TimeRange:grain})\\r\\n\",\"size\":0,\"title\":\"DNS Proxy Request over time by ClientIP\",\"noDataMessage\":\"There are no DNS Proxy logs within the selected workspaces. If you believe the selection is correct, confirm DNS Proxy logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":0},\"timeContextFromParameter\":\"DNSTimeBrush\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"visualization\":\"linechart\"},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFDNSProxy\"},\"name\":\"query - 30 - Copy\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallDnsProxy\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with \\\"DNS Request: \\\" ClientIP \\\":\\\" ClientPort \\\" - \\\" QueryID \\\" \\\" Request_Type \\\" \\\" Request_Class \\\" \\\" Request_Name \\\". \\\" Request_Protocol \\\" \\\" Request_Size \\\" \\\" EDNSO_DO \\\" \\\" EDNS0_Buffersize \\\" \\\" Responce_Code \\\" \\\" Responce_Flags \\\" \\\" Responce_Size \\\" \\\" Response_Duration\\r\\n| project-away msg_s\\r\\n| where '{DNSClientIP}' == ClientIP or '{DNSClientIP}' == \\\"*\\\"\\r\\n| where '{DNSRequestName}' == Request_Name or '{DNSRequestName}' == \\\"*\\\"\\r\\n| summarize by TimeGenerated, ResourceId, ClientIP, ClientPort, QueryID, Request_Type, Request_Class, Request_Name, Request_Protocol, Request_Size, EDNSO_DO, EDNS0_Buffersize, Responce_Code, Responce_Flags, Responce_Size, Response_Duration, SubscriptionId\",\"size\":0,\"showAnalytics\":true,\"title\":\"DNS Proxy Information\",\"noDataMessage\":\"There are no DNS Proxy logs within the selected workspaces. If you believe the selection is correct, confirm DNS Proxy logs are enabled for the Azure Firewall and feeding into this selected workspace. Reference Docs: https://docs.microsoft.com/azure/firewall/\",\"noDataMessageStyle\":2,\"timeContext\":{\"durationMs\":0},\"timeContextFromParameter\":\"DNSTimeBrush\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"filter\":true}},\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFDNSProxy\"},\"name\":\"query - 30\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics \\r\\n| where Category == \\\"AzureFirewallApplicationRule\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails \\r\\n| parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1 \\r\\n| parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" * \\r\\n| parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a \\r\\n| parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b \\r\\n| extend SourcePort = tostring(SourcePortInt) \\r\\n| extend TargetPort = tostring(TargetPortInt) \\r\\n| extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\") \\r\\n| extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\"N/A\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\"No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\"N/A\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort)\\r\\n| where Action == \\\"Deny\\\" or Action == \\\"Allow\\\"\\r\\n| summarize count() by FQDN, Action\\r\\n| sort by count_ desc\",\"size\":0,\"title\":\"FQDN Traffic by Count, filterable by FQDN\",\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"exportFieldName\":\"FQDN\",\"exportParameterName\":\"FullName\",\"exportDefaultValue\":\"*\",\"showExportToExcel\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"Action\",\"formatter\":5},{\"columnMatch\":\"count_\",\"formatter\":8,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":false,\"minimumIntegerDigits\":1,\"maximumFractionDigits\":1,\"maximumSignificantDigits\":4}}}],\"rowLimit\":10000,\"filter\":true,\"hierarchySettings\":{\"treeType\":1,\"groupBy\":[\"Action\"],\"expandTopLevel\":true}}},\"customWidth\":\"30\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFInvestigate\"},\"name\":\"query - 29 - Copy\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallApplicationRule\\\"\\r\\n| where msg_s contains \\\"{FullName:label}\\\" or '{FullName}' == \\\"*\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails\\r\\n| parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1 \\r\\n| parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" * \\r\\n| parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a \\r\\n| parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b \\r\\n| extend SourcePort = tostring(SourcePortInt) \\r\\n| extend TargetPort = tostring(TargetPortInt) \\r\\n| extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\") \\r\\n| extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\"N/A\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\"No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\"N/A\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort)\\r\\n| where Action == \\\"Deny\\\" or Action == \\\"Allow\\\"\\r\\n| where SourceIP <> \\\"\\\"\\r\\n| summarize count() by SourceIP, SubscriptionId\\r\\n| sort by count_\",\"size\":0,\"title\":\"SourceIP Address, filterable\",\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"exportedParameters\":[{\"fieldName\":\"SourceIP\",\"parameterName\":\"InvestigateIP\",\"parameterType\":1,\"defaultValue\":\"privateIPAddress\"},{\"fieldName\":\"SourceIP\",\"parameterName\":\"InvestigateIPWC\",\"parameterType\":1,\"defaultValue\":\"*\"},{\"fieldName\":\"SubscriptionId\",\"parameterName\":\"SelectedSubscriptionId\",\"parameterType\":1,\"defaultValue\":\"-\"}],\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"SubscriptionId\",\"formatter\":5},{\"columnMatch\":\"count_\",\"formatter\":8,\"formatOptions\":{\"palette\":\"whiteBlack\"},\"numberFormat\":{\"unit\":17,\"options\":{\"style\":\"decimal\",\"useGrouping\":false,\"maximumSignificantDigits\":4}}}],\"filter\":true},\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"SourceIP\",\"formatter\":4,\"formatOptions\":{\"palette\":\"orange\"},\"numberFormat\":{\"unit\":0,\"options\":{\"style\":\"decimal\",\"useGrouping\":false}}},\"showBorder\":true,\"size\":\"auto\"}},\"customWidth\":\"10\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFInvestigate\"},\"name\":\"query - 33\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"Resources\\r\\n| where type =~ 'microsoft.network/networkinterfaces'\\r\\n| where properties contains \\\"{InvestigateIP}\\\"\\r\\n| where properties contains '{SelectedSubscriptionId}'\\r\\n| extend NSG = properties['networkSecurityGroup']['id']\\r\\n| parse NSG with \\\"/subscriptions/\\\" NetworkSecurityGroup_Sub \\\"/resourceGroups/\\\" NetworkSecurityGroup_rg \\\"/providers/Microsoft.Network/networkSecurityGroups/\\\" NetworkSecurityGroup_Name\\r\\n| project id, PrivateIPAddress = tostring(properties['ipConfigurations'][0]['properties']['privateIPAddress']),  PublicIPAddress = tostring(properties['ipConfigurations'][0]['properties']['publicIPAddress']['id']), VirtualMachine = tostring(properties['virtualMachine']['id']), subnet = tostring(properties['ipConfigurations'][0]['properties']['subnet']['id']), NetworkSecurityGroup = NetworkSecurityGroup_Name, properties, subscriptionId, tenantId\",\"size\":0,\"title\":\"SourceIPAddress Resource Lookup\",\"exportFieldName\":\"id\",\"exportParameterName\":\"Testid\",\"exportDefaultValue\":\"*\",\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\",\"crossComponentResources\":[\"value::selected\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"properties\",\"formatter\":5}],\"filter\":true},\"tileSettings\":{\"titleContent\":{\"columnMatch\":\"SourceIP\",\"formatter\":4,\"formatOptions\":{\"palette\":\"orange\"},\"numberFormat\":{\"unit\":0,\"options\":{\"style\":\"decimal\",\"useGrouping\":false}}},\"showBorder\":true,\"size\":\"auto\"}},\"customWidth\":\"60\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFInvestigate\"},\"name\":\"query - 33 - Copy\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallApplicationRule\\\"\\r\\n| where msg_s contains \\\"{FullName:label}\\\" or '{FullName}' == \\\"*\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from \\\" SourceIP \\\":\\\" SourcePortInt:int \\\" \\\" TempDetails\\r\\n| where msg_s contains \\\"{InvestigateIPWC:label}\\\" or '{InvestigateIPWC}' == \\\"*\\\"\\r\\n| parse TempDetails with \\\"was \\\" Action1 \\\". Reason: \\\" Rule1 \\r\\n| parse TempDetails with \\\"to \\\" FQDN \\\":\\\" TargetPortInt:int \\\". Action: \\\" Action2 \\\".\\\" * \\r\\n| parse TempDetails with * \\\". Rule Collection: \\\" RuleCollection2a \\\". Rule:\\\" Rule2a \\r\\n| parse TempDetails with * \\\"Deny.\\\" RuleCollection2b \\\". Proceeding with\\\" Rule2b\\r\\n| parse msg_s with Protocol_s 'request from ' SourceHost_s ':' SourcePort_s 'to ' DestinationHost_s ':' DestinationPort_s 'was' Action_s 'to' DNATDestination\\r\\n| parse msg_s with Protocol_S 'request from ' SourceHost_S ':' SourcePort_S 'to ' DestinationHost_S ':' DestinationPort_S '. Action:' Action_S\\r\\n| extend Protocol = strcat(Protocol_s, Protocol_S), SourceHost = strcat(SourceHost_s, SourceHost_S),SourcePort = strcat(SourcePort_s, SourcePort_S), DestinationHost = strcat(DestinationHost_s, DestinationHost_S), DestinationPort = strcat(DestinationPort_s, DestinationPort_S), Action = strcat(Action_s, Action_S)\\r\\n| extend SourcePort = tostring(SourcePortInt) \\r\\n| extend TargetPort = tostring(TargetPortInt)\\r\\n| extend Action1 = case(Action1 == \\\"denied\\\",\\\"Deny\\\",\\\"Unknown Action\\\") \\r\\n| extend Action = case(Action2 == \\\"\\\",Action1,Action2),Rule = case(Rule2a == \\\"\\\", case(Rule1 == \\\"\\\",case(Rule2b == \\\"\\\",\\\"N/A\\\", Rule2b),Rule1),Rule2a),  RuleCollection = case(RuleCollection2b == \\\"\\\",case(RuleCollection2a == \\\"\\\",\\\"No rule matched\\\",RuleCollection2a), RuleCollection2b),FQDN = case(FQDN == \\\"\\\", \\\"N/A\\\", FQDN),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort)\\r\\n| summarize by TimeGenerated, FQDN, Protocol, Action, SourceIP, SourcePort, TargetPort, SourceHost , DestinationPort , ResourceId , ResourceGroup , RuleCollection, Rule, SubscriptionId\\r\\n\\r\\n\",\"size\":0,\"title\":\"FQDN Lookup logs\",\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"filter\":true}},\"customWidth\":\"100\",\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFInvestigate\"},\"name\":\"query - 33\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"AzureDiagnostics\\r\\n| where Category == \\\"AzureFirewallNetworkRule\\\"\\r\\n| where OperationName == \\\"AzureFirewallThreatIntelLog\\\"\\r\\n| where Resource in~ (split(\\\"{Resource:label}\\\", \\\", \\\"))\\r\\n| parse msg_s with Protocol \\\" request from\\\" SourceIP \\\":\\\" SourcePortInt:int \\\" to\\\" TargetIP \\\":\\\" TargetPortInt:int *\\r\\n| where msg_s contains \\\"{InvestigateIPWC:label}\\\" or '{InvestigateIPWC}' == \\\"*\\\"\\r\\n| parse msg_s with * \\\". Action: \\\" Action1a\\r\\n| parse msg_s with * \\\" was \\\" Action1b \\\" to \\\" NatDestination\\r\\n| parse msg_s with Protocol2 \\\" request from\\\" SourceIP2 \\\" to\\\" TargetIP2 \\\". Action:\\\" Action2\\r\\n| parse msg_s with Protocol_s 'request from ' SourceHost_s ':' SourcePort_s 'to ' DestinationHost_s ':' DestinationPort_s 'was' Action_s 'to' DNATDestination\\r\\n| parse msg_s with Protocol_S 'request from ' SourceHost_S ':' SourcePort_S 'to ' DestinationHost_S ':' DestinationPort_S '. Action:' Action_S\\r\\n| extend Protocol = strcat(Protocol_s, Protocol_S), SourceHost = strcat(SourceHost_s, SourceHost_S),SourcePort = strcat(SourcePort_s, SourcePort_S), DestinationHost = strcat(DestinationHost_s, DestinationHost_S), DestinationPort = strcat(DestinationPort_s, DestinationPort_S), Action = strcat(Action_s, Action_S)\\r\\n| extend SourcePort = tostring(SourcePortInt),TargetPort = tostring(TargetPortInt)\\r\\n| extend Action = case(Action1a == \\\"\\\", case(Action1b == \\\"\\\",Action2,Action1b), Action1a),Protocol = case(Protocol == \\\"\\\", Protocol2, Protocol),SourceIP = case(SourceIP == \\\"\\\", SourceIP2, SourceIP),TargetIP = case(TargetIP == \\\"\\\", TargetIP2, TargetIP),SourcePort = case(SourcePort == \\\"\\\", \\\"N/A\\\", SourcePort),TargetPort = case(TargetPort == \\\"\\\", \\\"N/A\\\", TargetPort),NatDestination = case(NatDestination == \\\"\\\", \\\"N/A\\\", NatDestination)\\r\\n| summarize by TimeGenerated,Protocol, Action, SourcePort, TargetPort, SourceHost , DestinationHost , DestinationPort , NatDestination, ResourceId , ResourceGroup , SubscriptionId\",\"size\":0,\"title\":\"Azure Firewall Threat Intel\",\"noDataMessage\":\"There is no Azure Firewall Threat Intel for your filtered results\",\"timeContext\":{\"durationMs\":2419200000},\"timeContextFromParameter\":\"TimeRange\",\"showExportToExcel\":true,\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"{Workspaces}\"],\"gridSettings\":{\"filter\":true}},\"conditionalVisibility\":{\"parameterName\":\"selectedTab\",\"comparison\":\"isEqualTo\",\"value\":\"AFInvestigate\"},\"name\":\"query - 29\"}],\"isLocked\":false,\"fallbackResourceIds\":[\"/subscriptions/REPLACESUBID/resourcegroups/REPLACERG/providers/microsoft.operationalinsights/workspaces/REPLACEWORKSPACE\"],\"fromTemplateId\":\"sentinel-AzureFirewall\"}"
     },
     "resources": [
         {
             "name": "[variables('hubLaName')]",
             "type": "Microsoft.OperationalInsights/workspaces",
-            "apiVersion": "2015-11-01-preview",
+            "apiVersion": "2020-08-01",
             "location": "[parameters('location')]",
             "comments": "This Log Analytics workspace stores logs from the regional hub network, its spokes, and bastion.",
             "properties": {
@@ -128,7 +113,7 @@
             "properties": {
                 "securityRules": [
                     {
-                        "name": "AllowWebExperienceIn",
+                        "name": "AllowWebExperienceInBound",
                         "properties": {
                             "description": "Allow our users in. Update this to be as restrictive as possible.",
                             "protocol": "Tcp",
@@ -142,7 +127,7 @@
                         }
                     },
                     {
-                        "name": "AllowControlPlaneIn",
+                        "name": "AllowControlPlaneInBound",
                         "properties": {
                             "description": "Service Requirement. Allow control plane access. Regional Tag not yet supported.",
                             "protocol": "Tcp",
@@ -156,7 +141,7 @@
                         }
                     },
                     {
-                        "name": "AllowHealthProbesIn",
+                        "name": "AllowHealthProbesInBound",
                         "properties": {
                             "description": "Service Requirement. Allow Health Probes.",
                             "protocol": "Tcp",
@@ -170,7 +155,7 @@
                         }
                     },
                     {
-                        "name": "DenyAllIn",
+                        "name": "DenyAllInBound",
                         "properties": {
                             "protocol": "*",
                             "sourcePortRange": "*",
@@ -183,7 +168,7 @@
                         }
                     },
                     {
-                        "name": "AllowSshToVnetOut",
+                        "name": "AllowSshToVnetOutBound",
                         "properties": {
                             "description": "Allow SSH out to the VNet",
                             "protocol": "Tcp",
@@ -197,7 +182,7 @@
                         }
                     },
                     {
-                        "name": "AllowRdpToVnetOut",
+                        "name": "AllowRdpToVnetOutBound",
                         "properties": {
                             "protocol": "Tcp",
                             "description": "Unused, but required for ARM validation.",
@@ -211,7 +196,7 @@
                         }
                     },
                     {
-                        "name": "AllowControlPlaneOut",
+                        "name": "AllowControlPlaneOutBound",
                         "properties": {
                             "description": "Required for control plane outbound. Regional prefix not yet supported",
                             "protocol": "Tcp",
@@ -225,7 +210,7 @@
                         }
                     },
                     {
-                        "name": "DenyAllOut",
+                        "name": "DenyAllOutBound",
                         "properties": {
                             "protocol": "*",
                             "sourcePortRange": "*",
@@ -241,10 +226,9 @@
             },
             "resources": [
                 {
-                    "name": "/Microsoft.Insights/default",
+                    "name": "Microsoft.Insights/default",
                     "type": "providers/diagnosticSettings",
                     "apiVersion": "2017-05-01-preview",
-                    "location": "[parameters('location')]",
                     "dependsOn": [
                         "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
                         "[resourceId('Microsoft.Network/networkSecurityGroups', variables('bastionNetworkNsgName'))]"
@@ -268,7 +252,7 @@
         {
             "name": "[variables('hubVnetName')]",
             "type": "Microsoft.Network/virtualNetworks",
-            "apiVersion": "2019-11-01",
+            "apiVersion": "2020-05-01",
             "location": "[parameters('location')]",
             "comments": "This is this region's hub network.",
             "dependsOn": [
@@ -290,32 +274,25 @@
                     {
                         "name": "GatewaySubnet",
                         "properties": {
-                            "addressPrefix": "[parameters('azureGatewaySubnetAddressSpace')]",
-                            "serviceEndpoints": [
-                            ]
+                            "addressPrefix": "[parameters('azureGatewaySubnetAddressSpace')]"
                         }
                     },
                     {
                         "name": "AzureBastionSubnet",
                         "properties": {
                             "addressPrefix": "[parameters('azureBastionSubnetAddressSpace')]",
-                            "serviceEndpoints": [
-                            ],
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('bastionNetworkNsgName'))]"
                             }
                         }
                     }
-                ],
-                "enableDdosProtection": false,
-                "enableVmProtection": false
+                ]
             },
             "resources": [
                 {
-                    "name": "/Microsoft.Insights/default",
+                    "name": "Microsoft.Insights/default",
                     "type": "providers/diagnosticSettings",
                     "apiVersion": "2017-05-01-preview",
-                    "location": "[parameters('location')]",
                     "dependsOn": [
                         "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
                         "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]"
@@ -377,6 +354,7 @@
                     {
                         "name": "hub-subnet",
                         "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
                             "subnet": {
                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('hubVnetName'), 'AzureBastionSubnet')]"
                             },
@@ -389,7 +367,7 @@
             },
             "resources": [
                 {
-                    "name": "/Microsoft.Insights/default",
+                    "name": "Microsoft.Insights/default",
                     "type": "providers/diagnosticSettings",
                     "apiVersion": "2017-05-01-preview",
                     "dependsOn": [
@@ -409,43 +387,11 @@
             ]
         },
         {
-            "name": "[variables('aksIpGroupName')]",
-            "type": "Microsoft.Network/ipGroups",
-            "apiVersion": "2020-05-01",
-            "location": "[parameters('location')]",
-            "comments": "This holds IP addresses of known nodepool subnets in spokes.",
-            "properties": {
-                "copy": [
-                    {
-                        "name": "ipAddresses",
-                        "count": "[length(parameters('nodepoolSubnetResourceIds'))]",
-                        "input": "[reference(parameters('nodepoolSubnetResourceIds')[copyIndex('ipAddresses')], '2019-11-01').addressPrefix]"
-                    }
-                ]
-            }
-        },
-        {
-            "name": "[variables('imageBuilderIpGroupName')]",
-            "type": "Microsoft.Network/ipGroups",
-            "apiVersion": "2020-05-01",
-            "location": "[parameters('location')]",
-            "comments": "This holds IP addresses of known AKS Jumpbox image build subnets in spokes.",
-            "properties": {
-                "copy": [
-                    {
-                        "name": "ipAddresses",
-                        "count": "[length(parameters('imagebuilderSubnetResourceIds'))]",
-                        "input": "[reference(parameters('imagebuilderSubnetResourceIds')[copyIndex('ipAddresses')], '2019-11-01').addressPrefix]"
-                    }
-                ]
-            }
-        },
-        {
             "name": "[variables('hubFwName')]",
             "type": "Microsoft.Network/azureFirewalls",
             "apiVersion": "2020-05-01",
             "location": "[parameters('location')]",
-            "comments": "This is the regional azure firewall that all regional spoke networks egress through.",
+            "comments": "This is the regional Azure Firewall that all regional spoke networks can egress through.",
             "zones": [
                 "1",
                 "2",
@@ -453,8 +399,7 @@
             ],
             "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIpAddresses', variables('defaultFwPipName'))]",
-                "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]",
-                "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]"
             ],
             "properties": {
                 "additionalProperties": {
@@ -478,8 +423,7 @@
                         }
                     }
                 ],
-                "natRuleCollections": [
-                ],
+                "natRuleCollections": [],
                 "networkRuleCollections": [
                     {
                         "name": "org-wide-block",
@@ -507,563 +451,15 @@
                                 }
                             ]
                         }
-                    },
-                    {
-                        "name": "AKS-Global-Requirements",
-                        "properties": {
-                            "action": {
-                                "type": "Allow"
-                            },
-                            "priority": 1000,
-                            "rules": [
-                                {
-                                    "name": "ntp",
-                                    "description": "Network Time Protocol (NTP) time synchronization required by AKS cluster nodes",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        "UDP"
-                                    ],
-                                    "destinationPorts": [
-                                        "123"
-                                    ],
-                                    /* Ideal -- but not complete enough - e.g. finding requests resolved by the pool that are being blocked. "destinationFqdns": [
-                                        "ntp.ubuntu.com",
-                                        "0.ubuntu.pool.ntp.org",
-                                        "1.ubuntu.pool.ntp.org",
-                                        "2.ubuntu.pool.ntp.org",
-                                        "3.ubuntu.pool.ntp.org"
-                                    ]*/
-                                    "destinationAddresses": [
-                                        "*"
-                                    ]
-                                }/*,
-                                {
-                                    "name": "local-dns",
-                                    "description": "As AKS cluster is started, core-dns is not active yet.  TODO: This is safe to keep removed, yeah?",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        "UDP"
-                                    ],
-                                    "destinationPorts": [
-                                        "53"
-                                    ],
-                                    "destinationAddresses": [
-                                        "172.16.0.10"
-                                    ]
-                                }*/
-                            ]
-                        }
-                    },
-                    {
-                        "name": "AKS-Regional-Requirements",
-                        "properties": {
-                            "action": {
-                                "type": "Allow"
-                            },
-                            "priority": 1010,
-                            "rules": [
-                                {
-                                    "name": "tunnel-front-pod-tcp",
-                                    "description": "Tunnel front pod to communicate with the tunnel end on the API server. Technically only needed to our API servers.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        "TCP"
-                                    ],
-                                    "destinationPorts": [
-                                        "9000"
-                                    ],
-                                    "destinationAddresses": [
-                                        "[concat('AzureCloud.', parameters('location'))]"
-                                    ]
-                                },
-                                {
-                                    "name": "tunnel-front-pod-udp",
-                                    "description": "Tunnel front pod to communicate with the tunnel end on the API server.  Technically only needed to our API servers.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        "UDP"
-                                    ],
-                                    "destinationPorts": [
-                                        "1194"
-                                    ],
-                                    "destinationAddresses": [
-                                        "[concat('AzureCloud.', parameters('location'))]"
-                                    ]
-                                }
-                            ]
-                        }
-                    }/*,
-                    {
-                        "name": "org-wide-allowed",
-                        "properties": {
-                            "action": {
-                                "type": "Allow"
-                            },
-                            "priority": 60000,
-                            "rules": [
-                                /*{
-                                    "name": "DNS",
-                                    "description": "Support DNS lookups. Consider restricting further.",
-                                    "sourceAddresses": [
-                                        "*"
-                                    ],
-                                    "protocols": [
-                                        "UDP"
-                                    ],
-                                    "destinationPorts": [
-                                        "53"
-                                    ],
-                                    "destinationAddresses": [
-                                        "*"
-                                    ]
-                                }*//*,
-                                {
-                                    "name": "HTTP-and-HTTPS",
-                                    "description": "Allow, but log, all 80 and 443 traffic outbound. Consider restricting further.",
-                                    "sourceAddresses": [
-                                        "*"
-                                    ],
-                                    "protocols": [
-                                        "TCP"
-                                    ],
-                                    "destinationPorts": [
-                                        "80",
-                                        "443"
-                                    ],
-                                    "destinationAddresses": [
-                                        "*"
-                                    ]
-                                }*/
-                            /*]
-                        }
-                    }*/
-                ],
-                "applicationRuleCollections": [
-                    {
-                        "name": "AKS-Global-Requirements",
-                        "properties": {
-                            "action": {
-                                "type": "Allow"
-                            },
-                            "priority": 200,
-                            "rules": [
-                                {
-                                    "name": "microsoft-container-registry",
-                                    "description": "All URLs related to MCR needed by AKS",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "mcr.microsoft.com",
-                                        "*.data.mcr.microsoft.com"
-                                    ]
-                                },
-                                {
-                                    "name": "azure-monitor-for-containers",
-                                    "description": "This endpoint is used to send metrics data and logs to Log Analytics.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "fqdnTags": [
-                                        "AzureMonitor"
-                                    ]
-                                },
-                                {
-                                    "name": "azure-policy-addon",
-                                    "description": "Required for AKS clusters that have Azure Policy enabled.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "data.policy.core.windows.net",
-                                        "store.policy.core.windows.net",
-                                        "gov-prod-policy-data.trafficmanager.net",
-                                        "raw.githubusercontent.com",
-                                        "dc.services.visualstudio.com"
-                                    ]
-                                },
-                                {
-                                    "name": "management-plane",
-                                    "description": "This address is required for Kubernetes GET/PUT operations.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "fqdnTags": [
-                                        "AzureKubernetesService"
-                                    ]
-                                },
-                                {
-                                    "name": "aad-auth",
-                                    "description": "This address is required for Azure Active Directory authentication.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "login.microsoftonline.com"
-                                    ]
-                                },
-                                {
-                                    "name": "apt-get",
-                                    "description": "This address is the Microsoft packages repository used for cached apt-get operations. Example packages include Moby, PowerShell, and Azure CLI.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "packages.microsoft.com"
-                                    ]
-                                },
-                                {
-                                    "name": "cluster-binaries",
-                                    "description": "This address is for the repository required to install required binaries like kubenet and Azure CNI.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "acs-mirror.azureedge.net"
-                                    ]
-                                },
-                                {
-                                    "name": "ubuntu-security-patches",
-                                    "description": "This address lets the Linux cluster nodes download the required security patches and updates per https://docs.microsoft.com/azure/aks/limit-egress-traffic#optional-recommended-fqdn--application-rules-for-aks-clusters.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Http",
-                                            "port": 80
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "security.ubuntu.com",
-                                        "azure.archive.ubuntu.com",
-                                        "changelogs.ubuntu.com"
-                                    ]
-                                },
-                                {
-                                    "name": "ubuntu-misc-https",
-                                    "description": "Other common Ubuntu requests. Can block if desired.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "motd.ubuntu.com",
-                                        "api.snapcraft.io"
-                                    ]
-                                },
-                                {
-                                    "name": "ubuntu-misc-http",
-                                    "description": "Other common Ubuntu requests. Can block if desired.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Http",
-                                            "port": 80
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "ifconfig.co"
-                                    ]
-                                },
-                                {
-                                    "name": "azure-monitor",
-                                    "description": "All required for Azure Monitor for containers per https://docs.microsoft.com/azure/aks/limit-egress-traffic#azure-monitor-for-containers",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "dc.services.visualstudio.com",
-                                        "*.ods.opinsights.azure.com",
-                                        "*.oms.opinsights.azure.com",
-                                        "*.microsoftonline.com",
-                                        "*.monitoring.azure.com"
-                                    ]
-                                },
-                                {
-                                    "name": "azure-policy",
-                                    "description": "All required for Azure Policy per https://docs.microsoft.com/azure/aks/limit-egress-traffic#azure-policy",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "gov-prod-policy-data.trafficmanager.net",
-                                        "raw.githubusercontent.com",
-                                        "dc.services.visualstudio.com",
-                                        "data.policy.core.windows.net",
-                                        "store.policy.core.windows.net"
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "name": "AKS-Regional-Requirements",
-                        "properties": {
-                            "action": {
-                                "type": "Allow"
-                            },
-                            "priority": 250,
-                            "rules": [
-                                {
-                                    "name": "nodes-to-api-server",
-                                    "description": "This address is required for Node <-> API server communication.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "[concat('*.hcp.', parameters('location'), '.azmk8s.io')]"
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "name": "Flux-Requirements",
-                        "properties": {
-                            "action": {
-                                "type": "Allow"
-                            },
-                            "priority": 300,
-                            "rules": [
-                                {
-                                    "name": "flux-to-github",
-                                    "description": "This address is required for Flux <-> Github repository with the desired cluster baseline configuration.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "github.com"
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "name": "AKSImageBuilder",
-                        "properties": {
-                            "action": {
-                                "type": "Allow"
-                            },
-                            "priority": 350,
-                            "rules": [
-                                {
-                                    "name": "to-azuremanagement",
-                                    "description": "This for AIB VMs to communicate with azure management API.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "management.azure.com"
-                                    ]
-                                },
-                                {
-                                    "name": "to-blobstorage",
-                                    "description": "This is required as the Proxy VM and Packer VMs both read and write from transient storage accounts (no ability to know what storage accounts ahead of time.)",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "*.blob.core.windows.net"
-                                    ]
-                                },
-                                {
-                                    "name": "apt-get",
-                                    "description": "This is required as the Packer VMs performs an update/upgrade",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Http",
-                                            "port": 80
-                                        },
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "azure.archive.ubuntu.com",
-                                        "packages.microsoft.com",
-                                        "archive.ubuntu.com",
-                                        "security.ubuntu.com"
-                                    ]
-                                },
-                                {
-                                    "name": "install-azcli",
-                                    "description": "This is required as the Packer VMs needs to install az cli.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "aka.ms",
-                                        "azurecliextensionsync.blob.core.windows.net",
-                                        "azurecliprod.blob.core.windows.net"
-                                    ]
-                                },
-                                {
-                                    "name": "install-k8scli",
-                                    "description": "This is required as the Packer VMs needs to install k8s cli tooling.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "storage.googleapis.com",
-                                        "api.github.com",
-                                        "github.com"
-                                    ]
-                                },
-                                {
-                                    "name": "install-helm",
-                                    "description": "This is required as the Packer VMs needs to install helm.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "raw.githubusercontent.com",
-                                        "get.helm.sh"
-                                    ]
-                                },
-                                {
-                                    "name": "install-terraform",
-                                    "description": "This is required as the Packer VMs needs to install terraform.",
-                                    "sourceIpGroups": [
-                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
-                                    ],
-                                    "protocols": [
-                                        {
-                                            "protocolType": "Https",
-                                            "port": 443
-                                        }
-                                    ],
-                                    "targetFqdns": [
-                                        "releases.hashicorp.com",
-                                        "*.s3.amazonaws.com"
-                                    ]
-                                }
-                            ]
-                        }
                     }
-                ]
+                ],
+                "applicationRuleCollections": []
             },
             "resources": [
                 {
-                    "name": "/Microsoft.Insights/default",
+                    "name": "Microsoft.Insights/default",
                     "type": "providers/diagnosticSettings",
                     "apiVersion": "2017-05-01-preview",
-                    "location": "[parameters('location')]",
                     "dependsOn": [
                         "[resourceId('Microsoft.OperationalInsights/workspaces', variables('hubLaName'))]",
                         "[resourceId('Microsoft.Network/azureFirewalls', variables('hubFwName'))]"
@@ -1097,8 +493,8 @@
     ],
     "outputs": {
         "hubVnetId": {
-            "value": "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]",
-            "type": "string"
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]"
         }
     }
 }

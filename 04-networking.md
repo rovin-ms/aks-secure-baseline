@@ -12,6 +12,8 @@ The prerequisites for the [AKS secure baseline cluster](./) are now completed wi
    az login --tenant $TENANT_ID
    ```
 
+1. TODO: Introduce subscription deployment
+
 1. Create the networking hubs resource group.
 
    > :book: The networking team has all their regional networking hubs in the following resource group. The group's default location does not matter, as it's not tied to the resource locations. (This resource group would have already existed.)
@@ -42,16 +44,38 @@ The prerequisites for the [AKS secure baseline cluster](./) are now completed wi
 
    ```bash
    # [This takes about six minutes to run.]
-   az deployment group create --resource-group rg-enterprise-networking-hubs --template-file networking/hub-default.json --parameters location=eastus2
+   az deployment group create -g rg-enterprise-networking-hubs -f networking/hub-default.json -p location=eastus2
    ```
 
    The hub creation will emit the following:
 
-      * `hubVnetId` - which you'll will need to know for future spokes that get created. E.g. `/subscriptions/[subscription id]/resourceGroups/rg-enterprise-networking-hubs/providers/Microsoft.Network/virtualNetworks/vnet-eastus2-hub`
+      * `hubVnetId` - which you'll will need to know for all future regional spokes that get created. E.g. `/subscriptions/[subscription id]/resourceGroups/rg-enterprise-networking-hubs/providers/Microsoft.Network/virtualNetworks/vnet-eastus2-hub`
 
-1. Create the spoke that will be home to the AKS cluster and its adjacent resources.
+1. Create the AKS Jumpbox Creation network spoke.
 
-   > :book:  The networking team receives a request from an app team in business unit (BU) 0001 for two network spokes. One to house their new AKS-based application (Internally know as Application ID: A0008). The network team talks with the app team to understand their requirements and aligns those needs with Microsoft's best practices for a secure AKS cluster deployment. They capture those specific requirements and deploy the spoke, aligning to those specs, and connecting it to the matching regional hub. The app team also plans on building their jumpbox image using Azure Image Builder and requests a spoke with locked down networking to build images in isolation.
+   > :book: The networking team receives a request from an app team in business unit (BU) 0001 for a network spoke. This spoke will be used exclusively to build VM images for their new AKS-based application (Internally known as Application ID A0005). The network team talks with the app team to understand their requirements and aligns those needs with internal network policies. The AKS cluster is considered one of the in-scope clusters from a compliance perspective, so all processes involving this cluster, demand heightened network compliance.
+
+   ```bash
+   # [This takes about X minutes to run.]
+   HUB_VNET_ID=$(az deployment group show -g rg-enterprise-networking-hubs -n hub-default --query properties.outputs.hubVnetId.value -o tsv)
+   az deployment group create -g rg-enterprise-networking-spokes -f networking/spoke-BU0001A0005-00.json -p location=eastus2 hubVnetResourceId="${HUB_VNET_ID}"
+   ```
+
+   The spoke creation will emit the following:
+
+      * TODO
+
+1. Update the regional hub deployment to account for the requirements of the spokes.
+
+   Now that spoke network is created, we need to prep the hub network's firewall to prepare for the workload that is landed in here. Our hub firewall does NOT have any default permissive egress rules, and as such, each needed egress endpoint needs to be specifically allowed.  So, to prevent workload deployment failures, these rules need to be in place before deployments start.
+
+   ```bash
+   az deployment group create -g rg-enterprise-networking-hubs -f networking/hub-region-0.json -p location=eastus2
+   ```
+
+1. Create the AKS Jumpbox Creation and AKS Cluster spokes.
+
+   > :book:  The networking team receives a request from an app team in business unit (BU) 0001 for two network spokes. One to house their new AKS-based application (Internally know as Application ID: A0008). The network team talks with the app team to understand their requirements and aligns those needs with Microsoft's best practices for a secure AKS cluster deployment. They capture those specific requirements and deploy the spoke, aligning to those specs, and connecting it to the matching regional hub. The app team also plans on building their jumpbox image using Azure Image Builder and requests a spoke with locked down networking to build these images in isolation.
 
    ```bash
    # [This takes about ten minutes to run.]

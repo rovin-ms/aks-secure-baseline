@@ -309,17 +309,17 @@
                                 "parameters": {
                                     "listOfResourceTypesAllowed": {
                                         "value": [
-                                            "Microsoft.Network/ipGroups",
+                                            "Microsoft.Insights/diagnosticSettings",
+                                            "Microsoft.Insights/workbooks",
                                             "Microsoft.Network/azureFirewalls",
+                                            "Microsoft.Network/bastionHosts",
+                                            "Microsoft.Network/ipGroups",
                                             "Microsoft.Network/networkSecurityGroups",
                                             "Microsoft.Network/networkSecurityGroups/securityRules",
+                                            "Microsoft.Network/publicIpAddresses",
                                             "Microsoft.Network/virtualNetworks",
                                             "Microsoft.Network/virtualNetworks/subnets",
                                             "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
-                                            "Microsoft.Network/publicIpAddresses",
-                                            "Microsoft.Network/bastionHosts",
-                                            "Microsoft.Insights/diagnosticSettings",
-                                            "Microsoft.Insights/workbooks",
                                             "Microsoft.OperationalInsights/workspaces"
                                         ]
                                     }
@@ -358,14 +358,14 @@
                                 "parameters": {
                                     "listOfResourceTypesAllowed": {
                                         "value": [
-                                            "Microsoft.Network/routeTables",
                                             "Microsoft.Network/networkSecurityGroups",
-                                            "Microsoft.Network/virtualNetworks",
-                                            "Microsoft.Network/virtualNetworks/subnets",
-                                            "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
                                             "Microsoft.Network/privateDnsZones",
                                             "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
-                                            "Microsoft.Network/publicIpAddresses"
+                                            "Microsoft.Network/publicIpAddresses",
+                                            "Microsoft.Network/routeTables",
+                                            "Microsoft.Network/virtualNetworks",
+                                            "Microsoft.Network/virtualNetworks/subnets",
+                                            "Microsoft.Network/virtualNetworks/virtualNetworkPeerings"
                                         ]
                                     }
                                 }
@@ -402,11 +402,24 @@
                                 "policyDefinitionId": "[variables('policyDefinitionId-AllowedResources')]",
                                 "parameters": {
                                     "listOfResourceTypesAllowed": {
-                                        "value": [
-                                            "Microsoft.ManagedIdentity/userAssignedIdentities",
-                                            "Microsoft.VirtualMachineImages/imageTemplates",
+                                        "value": [                                            
                                             "Microsoft.Compute/images",
-                                            "Microsoft.Compute/virtualMachineScaleSets"
+                                            "Microsoft.Compute/virtualMachineScaleSets",
+                                            "Microsoft.ContainerRegistry/registries",
+                                            "Microsoft.ContainerRegistry/registries/replications",
+                                            "Microsoft.ContainerService/managedClusters",
+                                            "Microsoft.Insights/activityLogAlerts",
+                                            "Microsoft.Insights/metricAlerts",
+                                            "Microsoft.Insights/scheduledQueryRules",
+                                            "Microsoft.KeyVault/vaults",
+                                            "Microsoft.ManagedIdentity/userAssignedIdentities",
+                                            "Microsoft.Network/applicationGateways",
+                                            "Microsoft.Network/privateDnsZones",
+                                            "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+                                            "Microsoft.Network/privateEndpoints",
+                                            "Microsoft.OperationalInsights/workspaces",
+                                            "Microsoft.OperationsManagement/solutions",
+                                            "Microsoft.VirtualMachineImages/imageTemplates"
                                         ]
                                     }
                                 }

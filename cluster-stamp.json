@@ -96,6 +96,10 @@
         "kubernetesVersion": {
             "defaultValue": "1.19.3",
             "type": "string"
+        },
+        "jumpBoxImageResourceId": {
+            "type": "string",
+            "defaultValue": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-bu0001a0005/providers/Microsoft.Compute/images/img-aksopsjb-20201230T194407"
         }
     },
     "variables": {
@@ -121,29 +125,12 @@
         "vnetIngressServicesSubnetResourceId": "[concat(parameters('targetVnetResourceId'), '/subnets/snet-cluster-ingressservices')]",
         "vnetManagementOpsSubnetResourceId": "[concat(parameters('targetVnetResourceId'), '/subnets/snet-management-ops')]",
 
-        "agwName": "[concat( 'apw-', variables('clusterName')) ]",
+        "agwName": "[concat('apw-', variables('clusterName')) ]",
         "apwResourceId": "[resourceId('Microsoft.Network/applicationGateways', variables('agwName'))]",
 
-        "keyVaultName": "[concat( 'kv-', variables('clusterName'))]"
+        "keyVaultName": "[concat('kv-', variables('clusterName'))]"
     },
     "resources": [
-        /*{
-            "name": "[guid('3c1b3629-c8f8-4bf6-862c-037cb9094038', resourceGroup().name)]",
-            "type": "Microsoft.Authorization/policyAssignments",
-            "apiVersion": "2020-03-01",
-            "location": "global",
-            "comments": "TODO: Change this. TODO: Move to a subscription deployment",
-            "properties": {
-                "displayName": "[concat('[', variables('nodeResourceGroupName'), '] ', reference('/providers/Microsoft.Authorization/policyDefinitions/3c1b3629-c8f8-4bf6-862c-037cb9094038', '2020-09-01').displayName)]",
-                "scope": "[concat(subscription().id, '/resourceGroups/', variables('nodeResourceGroupName'))]",
-                "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/3c1b3629-c8f8-4bf6-862c-037cb9094038",
-                "parameters": {
-                    "logAnalytics": {
-                        "value": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourcegroups/rg-secureops/providers/microsoft.operationalinsights/workspaces/la-sc-agentlogs-ckittel01"
-                    }
-                }
-            }
-        },*/
         /*{
             "name": "[concat('mi-', variables('clusterName'), '-controlplane')]",
             "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
@@ -214,7 +201,7 @@
                             "osType": "Linux"
                         },
                         "imageReference": {
-                            "id": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-bu0001a0005/providers/Microsoft.Compute/images/img-aksopsjb-20201230T194407"
+                            "id": "[parameters('jumpBoxImageResourceId')]"
                         }
                     },
                     "networkProfile": {
@@ -234,7 +221,7 @@
                                                 "privateIPAddressVersion": "IPv4",
                                                 "publicIPAddressConfiguration": "[null()]",
                                                 "subnet": {
-                                                    "id": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-enterprise-networking-spokes/providers/Microsoft.Network/virtualNetworks/vnet-spoke-BU0001A0005-01/subnets/snet-management-ops"
+                                                    "id": "[variables('vnetManagementOpsSubnetResourceId')]"
                                                 }
                                             }
                                         }

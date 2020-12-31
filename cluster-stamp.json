@@ -159,45 +159,92 @@
             "comments": "User Managed Identity that App Gateway is assigned. Used for Azure Key Vault Access."
         },
         {
-            "name": "aks-jumpbox",
-            "type": "Microsoft.VirtualMachineImages/imageTemplates",
-            "apiVersion": "2020-02-14",
+            "name": "vmss-jumpboxes",
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "apiVersion": "2020-06-01",
+            "comments": "Hosts the VMs used as AKS jumpboxes. Using VMSS as a way to manage spanning fault and update domains.",
             "location": "[parameters('location')]",
-            "comments": "This is the image spec for our jumpbox",
-            "dependsOn": [
-
-            ],
-            "identity": {
-                "type": "None"
+            "zones": ["1", "2", "3"],
+            "sku": {
+                "name": "Standard_DS1_v2",
+                "capacity": 2
             },
             "properties": {
-                "buildTimeoutInMinutes": 60,
-                "vmProfile": {
-                    "osDiskSizeGB": 0,
-                    "vmSize": "Standard_D1_v2",
-                    "vnetConfig": {
-                        "subnetId": "[variables('vnetManagementOpsSubnetResourceId')]"
-                    }
+                "additionalCapabilities": {
+                    "ultraSSDEnabled": false
                 },
-                "source": {
-                    "type": "PlatformImage",
-                    "publisher": "Canonical",
-                    "offer": "UbuntuServer",
-                    "sku": "18.04-LTS",
-                    "version": "latest"
+                "overprovision": true,
+                "singlePlacementGroup": true,
+                "upgradePolicy": {
+                    "mode": "Automatic"
                 },
-                "distribute": [
-                    {
-                        "type": "ManagedImage",
-                        "runOutputName": "run-output-name",
-                        "imageId": "image-id",
-                        "location": "[parameters('location')]"
+                "zoneBalance": false,
+                "virtualMachineProfile": {
+                    "diagnosticsProfile": {
+                        "bootDiagnostics": {
+                            "enabled": true
+                        }
+                    },
+                    "osProfile": {
+                        "computerNamePrefix": "aksjmp",
+                        "linuxConfiguration": {
+                            "disablePasswordAuthentication": true,
+                            "provisionVMAgent": true,
+                            "ssh": {
+                                "publicKeys": [
+                                    {
+                                        "path": "/home/azuresu/.ssh/authorized_keys",
+                                        "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAo45IddGf99tLXFxyYVWmHhh/J7EhuT1Rh0/Z9G70pmfF8/FeeHNgUeIQOEewiGOF9EiPdt66LtcW8KPmxmyMrKjAsEG5KJIHwyZ72FtFOQCqpDfDTOj/nVI3QgR7k/InQstA2C4nqfgUKlVLqpZHGpcy0AZuHS6eMIzQ9jfhYwbOan/re8KNtOwa63Egsrkf00EBQGmmkGLvzsMgCzPjP4oguWkBb7tcXfoLhph096GwaDx8dgpjUeB6ewnl0qukEGGRfWf5Qdz7RnlHbIC5gdplLyjb/78lDJaDejqFRvZ23ZeJE89AvybByDSvHzHDgiwQT0T8OsUOlcb0sp1QyQ== rsa-key-20201230"
+                                    }
+                                ]
+                            }
+                        },
+                        "adminUsername": "azuresu"
+                    },
+                    "extensionProfile": {
+                        "extensions": []
+                    },
+                    "storageProfile": {
+                        "osDisk": {
+                            "createOption": "FromImage",
+                            "caching": "ReadOnly",
+                            "diffDiskSettings": {
+                                "option": "Local"
+                            },
+                            "osType": "Linux"
+                        },
+                        "imageReference": {
+                            "id": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-bu0001a0005/providers/Microsoft.Compute/images/img-aksopsjb-20201230T194407"
+                        }
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "vnet-spoke-BU0001A0005-01-nic01",
+                                "properties": {
+                                    "primary": true,
+                                    "enableIPForwarding": false,
+                                    "enableAcceleratedNetworking": false,
+                                    "networkSecurityGroup": "[null()]",
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "default",
+                                            "properties": {
+                                                "primary": true,
+                                                "privateIPAddressVersion": "IPv4",
+                                                "publicIPAddressConfiguration": "[null()]",
+                                                "subnet": {
+                                                    "id": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-enterprise-networking-spokes/providers/Microsoft.Network/virtualNetworks/vnet-spoke-BU0001A0005-01/subnets/snet-management-ops"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
                     }
-                ],
-                "customize": [
-
-                ]
-            }
+                }
+            }  
         },
         /*{
             "name": "podmi-ingress-controller",

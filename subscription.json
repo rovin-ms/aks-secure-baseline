@@ -405,7 +405,8 @@
                                         "value": [
                                             "Microsoft.ManagedIdentity/userAssignedIdentities",
                                             "Microsoft.VirtualMachineImages/imageTemplates",
-                                            "Microsoft.Compute/images"
+                                            "Microsoft.Compute/images",
+                                            "Microsoft.Compute/virtualMachineScaleSets"
                                         ]
                                     }
                                 }

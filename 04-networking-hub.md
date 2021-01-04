@@ -15,7 +15,7 @@ TODO
    > In addition to the eastus2 regional hub (that you're deploying) you can assume there are similar deployed as well in in other Azure regions in this resource group.
 
    ```bash
-   # [This takes about ten minutes to run.]
+   # [This takes about eight minutes to run.]
    az deployment group create -g rg-enterprise-networking-hubs -f networking/hub-region.v0.json -p location=eastus2
    ```
 

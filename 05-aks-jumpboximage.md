@@ -67,7 +67,7 @@ Now that we have our image building network created, egressing through our hub, 
    IMGDEPLOY_ROLEID=$(az deployment sub show -n DeployAibRbacRoles --query 'properties.outputs.roleResourceIds.value.customImageBuilderImageCreationRole.guid' -o tsv)
 
    # [This takes about one minute to run.]
-   az deployment group create -g rg-bu0001a0005 -u https://raw.githubusercontent.com/mspnp/aks-jumpbox-imagebuilder/main/azuredeploy.json -p buildInVnetResourceGroupName=rg-enterprise-networking-spokes buildInVnetName=vnet-spoke-BU0001A0005-00 buildInVnetSubnetName=snet-imagebuilder location=eastus2 imageBuilderNetworkingRoleGuid=${NETWORKING_ROLEID} imageBuilderImageCreationRoleGuid=${IMGDEPLOY_ROLEID} imageDestinationResourceGroupName=rg-bu0001a0005 -n CreateJumpboxImageTemplate
+   az deployment group create -g rg-bu0001a0005 -u https://raw.githubusercontent.com/mspnp/aks-jumpbox-imagebuilder/main/azuredeploy.json -p buildInVnetResourceGroupName=rg-enterprise-networking-spokes buildInVnetName=vnet-spoke-BU0001A0005-00 buildInVnetSubnetName=snet-imagebuilder location=eastus2 imageBuilderNetworkingRoleGuid="${NETWORKING_ROLEID}" imageBuilderImageCreationRoleGuid="${IMGDEPLOY_ROLEID}" imageDestinationResourceGroupName=rg-bu0001a0005 -n CreateJumpboxImageTemplate
    ```
 
 1. Build the AKS jumpbox image.

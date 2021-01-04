@@ -253,7 +253,7 @@
                             "sourcePortRange": "*",
                             "sourceAddressPrefix": "*",
                             "destinationPortRange": "65200-65535",
-                            "destinationAddressPrefix": "VirtualNetwork",
+                            "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 110,
                             "direction": "Inbound"

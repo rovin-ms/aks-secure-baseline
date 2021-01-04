@@ -99,7 +99,7 @@
         },
         "jumpBoxImageResourceId": {
             "type": "string",
-            "defaultValue": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-bu0001a0005/providers/Microsoft.Compute/images/img-aksopsjb-20201230T194407"
+            "defaultValue": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-bu0001a0005/providers/Microsoft.Compute/images/img-aksopsjb-20210104T145349"
         }
     },
     "variables": {
@@ -561,7 +561,7 @@
             "properties": {},
             "resources": [
                 {
-                    "name": "bu0001a0008-00",
+                    "name": "bu0001a0005-01",
                     "type": "A",
                     "apiVersion": "2018-09-01",
                     "dependsOn": [
@@ -648,7 +648,7 @@
                         "name": "apw-frontend-ip-configuration",
                         "properties": {
                             "PublicIPAddress": {
-                                "id": "[resourceId(subscription().subscriptionId,variables('vNetResourceGroup'),'Microsoft.Network/publicIpAddresses','pip-BU0001A0008-00')]"
+                                "id": "[resourceId(subscription().subscriptionId,variables('vNetResourceGroup'),'Microsoft.Network/publicIpAddresses','pip-BU0001A0005-00')]"
                             }
                         }
                     }
@@ -682,7 +682,7 @@
                 ],
                 "probes": [
                     {
-                        "name": "probe-bu0001a0008-00.aks-ingress.contoso.com",
+                        "name": "probe-bu0001a0005-00.aks-ingress.contoso.com",
                         "properties": {
                             "protocol": "Https",
                             "path": "/favicon.ico",
@@ -698,11 +698,11 @@
                 ],
                 "backendAddressPools": [
                     {
-                        "name": "bu0001a0008-00.aks-ingress.contoso.com",
+                        "name": "bu0001a0005-00.aks-ingress.contoso.com",
                         "properties": {
                             "backendAddresses": [
                                 {
-                                    "fqdn": "bu0001a0008-00.aks-ingress.contoso.com"
+                                    "fqdn": "bu0001a0005-00.aks-ingress.contoso.com"
                                 }
                             ]
                         }
@@ -718,7 +718,7 @@
                             "pickHostNameFromBackendAddress": true,
                             "requestTimeout": 20,
                             "probe": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('agwName')),'/probes/probe-bu0001a0008-00.aks-ingress.contoso.com')]"
+                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('agwName')),'/probes/probe-bu0001a0005-00.aks-ingress.contoso.com')]"
                             },
                             "trustedRootCertificates": [
                                 {
@@ -758,7 +758,7 @@
                                 "id": "[concat(variables('apwResourceId'), '/httpListeners/listener-https')]"
                             },
                             "backendAddressPool": {
-                                "id": "[concat(variables('apwResourceId'), '/backendAddressPools/bu0001a0008-00.aks-ingress.contoso.com')]"
+                                "id": "[concat(variables('apwResourceId'), '/backendAddressPools/bu0001a0005-00.aks-ingress.contoso.com')]"
                             },
                             "backendHttpSettings": {
                                 "id": "[concat(variables('apwResourceId'), '/backendHttpSettingsCollection/aks-ingress-contoso-backendpool-httpsettings')]"

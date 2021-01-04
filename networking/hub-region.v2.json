@@ -14,6 +14,12 @@
                 "description": "Subnet resource Id for the AKS image builder subnet"
             }
         },
+        "aksJumpboxSubnetResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "Subnet resource Id for the AKS jumpbox subnet"
+            }
+        },
         "location": {
             "defaultValue": "eastus2",
             "type": "string",
@@ -78,6 +84,7 @@
     "variables": {
         "aksIpGroupName": "[concat('ipg-', parameters('location'), '-AksNodepools')]",
         "imageBuilderIpGroupName": "[concat('ipg-', parameters('location'), '-AksJumpboxImageBuilders')]",
+        "aksJumpBoxIpGroupName": "[concat('ipg-', parameters('location'), '-AksJumpboxes')]",
         "defaultFwPipName": "[concat('pip-fw-', parameters('location'))]",
         "bastionPipName": "[concat('pip-ab-', parameters('location'))]",
         "bastionServiceName": "[concat('ab-', parameters('location'))]",
@@ -430,6 +437,18 @@
             }
         },
         {
+            "name": "[variables('aksJumpBoxIpGroupName')]",
+            "type": "Microsoft.Network/ipGroups",
+            "apiVersion": "2020-05-01",
+            "location": "[parameters('location')]",
+            "comments": "This holds IP addresses of known AKS Jumpboxs in spokes.",
+            "properties": {
+                "ipAddresses": [
+                    "[reference(parameters('aksJumpboxSubnetResourceId'), '2020-05-01').addressPrefix]"
+                ]
+            }
+        },
+        {
             "name": "[variables('hubFwName')]",
             "type": "Microsoft.Network/azureFirewalls",
             "apiVersion": "2020-05-01",
@@ -444,7 +463,8 @@
                 "[resourceId('Microsoft.Network/publicIpAddresses', variables('defaultFwPipName'))]",
                 "[resourceId('Microsoft.Network/virtualNetworks', variables('hubVnetName'))]",
                 "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]",
-                "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
+                "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]",
+                "[resourceId('Microsoft.Network/ipGroups', variables('aksJumpBoxIpGroupName'))]"
             ],
             "properties": {
                 "additionalProperties": {
@@ -996,6 +1016,49 @@
                                     ],
                                     "targetFqdns": [
                                         "releases.hashicorp.com"
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "aks-jumpbox",
+                        "properties": {
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "priority": 450,
+                            "rules": [
+                                {
+                                    "name": "az-login",
+                                    "description": "Allow jumpboxes to perform az login.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksJumpBoxIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "login.microsoftonline.com"
+                                    ]
+                                },
+                                {
+                                    "name": "az-management-api",
+                                    "description": "Allow jumpboxes to communicate with Azure management APIs.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksJumpBoxIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "management.azure.com"
                                     ]
                                 }
                             ]

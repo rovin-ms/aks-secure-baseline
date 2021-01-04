@@ -596,6 +596,10 @@
                         resourceId('Microsoft.Network/virtualNetworks/subnets', variables('clusterVNetName'), 'snet-cluster-outofscopenodepools'))]",
             "type": "array"
         },
+        "jumpboxSubnetResourceId": {
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('clusterVNetName'), 'snet-management-ops')]",
+            "type": "string"
+        },
         "appGwPublicIpAddress": {
             "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('primaryClusterPipName'))).ipAddress]",
             "type": "string"

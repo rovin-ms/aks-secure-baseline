@@ -21,9 +21,10 @@ The prerequisites for the [AKS secure baseline cluster](./) are now completed wi
    ```bash
    NODEPOOL_SUBNET_RESOURCEIDS="['$(az deployment group show -g rg-enterprise-networking-spokes -n spoke-BU0001A0005-01 --query "properties.outputs.nodepoolSubnetResourceIds.value | join ('\',\'',@)" -o tsv)']"
    AIB_SUBNET_ID=$(az deployment group show -g rg-enterprise-networking-spokes -n spoke-BU0001A0005-00 --query properties.outputs.imageBuilderSubnetResourceId.value -o tsv)
+   JUMPBOX_SUBNET_RESOURCEID=$(az deployment group show -g rg-enterprise-networking-spokes -n spoke-BU0001A0005-01 --query properties.outputs.jumpboxSubnetResourceId.value -o tsv)
 
    # [This takes about five minutes to run.]
-   az deployment group create -g rg-enterprise-networking-hubs -f networking/hub-region.v2.json -p location=eastus2 aksImageBuilderSubnetResourceId="${AIB_SUBNET_ID}" nodepoolSubnetResourceIds="${NODEPOOL_SUBNET_RESOURCEIDS}"
+   az deployment group create -g rg-enterprise-networking-hubs -f networking/hub-region.v2.json -p location=eastus2 aksImageBuilderSubnetResourceId="${AIB_SUBNET_ID}" nodepoolSubnetResourceIds="${NODEPOOL_SUBNET_RESOURCEIDS}" aksJumpboxSubnetResourceId="${JUMPBOX_SUBNET_RESOURCEID}"
    ```
 
 ### Next step

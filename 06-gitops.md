@@ -11,17 +11,16 @@ GitOps allows a team to author Kubernetes manifest files, persist them in their 
 * CSI driver and Azure KeyVault CSI Provider
 * the workload's namespace named `a0008`
 
-1. Install `kubectl` 1.19 or newer. (`kubctl` supports +/-1 Kubernetes version.)
+1. Connect to a jumpbox instance.
 
    ```bash
-   sudo az aks install-cli
    kubectl version --client
    ```
 
 1. Get the cluster name.
 
    ```bash
-   export AKS_CLUSTER_NAME=$(az deployment group show --resource-group rg-bu0001a0008 -n cluster-stamp --query properties.outputs.aksClusterName.value -o tsv)
+   export AKS_CLUSTER_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.aksClusterName.value -o tsv)
    ```
 
 1. Get AKS `kubectl` credentials (as a user that has admin permissions to the cluster).

@@ -1060,6 +1060,22 @@
                                     "targetFqdns": [
                                         "management.azure.com"
                                     ]
+                                },
+                                {
+                                    "name": "aks-cluster-api",
+                                    "description": "Allows access to the cluster API. [NOTE: This will be removed once we have PL]",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksJumpBoxIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "[concat('*.hcp.', parameters('location'), '.azmk8s.io')]"
+                                    ]
                                 }
                             ]
                         }

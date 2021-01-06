@@ -1,20 +1,26 @@
-# Azure Kubernetes Service (AKS) Baseline Cluster - Regulated Industries
+# Azure Kubernetes Service (AKS) Baseline Cluster for Regulated Industries
 
-This reference implementation demonstrates the _recommended starting (baseline) infrastructure architecture_ for an [AKS cluster](https://azure.microsoft.com/services/kubernetes-service) that is under regulatory compliance. This implementation builds upon the [AKS Baseline Cluster reference implementation](https://github.com/mspnp/aks-secure-baseline) and adds to it additional implementation points that are more commonly seen in regulated environments. Even if you are not in a regulated environment, this infrastructure will show a heightened security posture cluster than the general-purpose cluster presented in the baseline. This is implementation and document is meant to guide an interdisciplinary team or multiple distinct teams like networking, security and development through the process of getting this baseline infrastructure deployed and understanding the components of it.
+This reference implementation demonstrates the _recommended starting (baseline) infrastructure architecture_ for an [AKS cluster](https://azure.microsoft.com/services/kubernetes-service) that is under regulatory compliance requirements (such as PCI). This implementation builds upon the [AKS Baseline Cluster reference implementation](https://github.com/mspnp/aks-secure-baseline) and adds to it additional implementation points that are more commonly seen in regulated environments vs typical "public cloud" consumption patterns. **If you haven't familiarized yourself with the general-purpose [AKS baseline cluster](https://github.com/mspnp/aks-secure-baseline), you should strongly consider starting there before continuing here.**
+
+> :warning: **These artifacts have not been certified in any official capacity; regulatory compliance is a shared responsibility between you and your hosting provider.** This implementation is designed to aide you on your journey to achieving your compliance, but by itself does not ensure any level of compliance.
+
+AKS is well positioned to give you the tools and processes necessary to help you achieve a compliant hosting infrastructure. The implementation details can be complex, as is the overall process of compliance. We walk through the deployment here in a rather _verbose_ method to help you understand each component of this cluster, ideally teaching you about each layer and providing you with the knowledge necessary to apply it to your unique compliance scoped workload.
+
+Even if you are not in a regulated environment, this infrastructure will show a more heightened security posture cluster than the general-purpose cluster presented in the baseline, and you might find it useful to take select concepts from here and apply it to your non-regulated workloads as added security (at the tradeoff of added complexity and hosting costs).
 
 ## Azure Architecture Center guidance
 
-This project has a companion set of articles that describe challenges, design patterns, and best practices for a regulated industries AKS cluster. You can find this article on the Azure Architecture Center at [Azure Kubernetes Service (AKS) Baseline Cluster - Regulated Industries](https://aka.ms/architecture/aks-baseline-regulated). If you haven't reviewed it, we suggest you read it as it will give added context to the considerations applied in this implementation. Ultimately, this is the direct implementation of that specific architectural guidance.
+This project has a companion set of articles that describe challenges, design patterns, and best practices for a AKS cluster designed to host workloads that fall in regulatory scope. You can find this article on the Azure Architecture Center at [Azure Kubernetes Service (AKS) Baseline Cluster for Regulated Industries](https://aka.ms/architecture/aks-baseline-regulated). If you haven't reviewed it, we suggest you read it as it will give added context to the considerations applied in this implementation. Ultimately, this is the direct implementation of that specific architectural guidance.
 
 ## Architecture
 
-**This architecture is infrastructure focused**, more so than workload. It concentrates on the AKS cluster itself, including concerns with identity, post-deployment configuration, secret management, and network topologies. Where it touches on workload is around in-cluster policies that are typical of regulated workload concerns.
+**This reference implementation is infrastructure focused**, more so than workload. It concentrates on the AKS cluster itself, including concerns with identity, post-deployment configuration, secret management, and network topologies. Where it touches on workload is around in-cluster policies that are typical of regulated workload concerns.
 
-The implementation presented here is the _minimum recommended baseline for most AKS clusters falling into a regulated scope_. This implementation integrates with Azure services that will deliver observability, provide a network topology that will support multi-regional growth, and keep the in-cluster traffic secure as well. This architecture should be considered your starting point for pre-production and production stages of your regulated cluster.
+The implementation presented here is the _minimum recommended baseline for most AKS clusters falling into a regulated scope_. This implementation integrates with Azure services that will deliver observability, provide a network topology that will support multi-regional growth, and keep the in-cluster traffic secure as well. This architecture should be considered your starting point for pre-production and production stages of clusters hosting regulated workloads.
 
-Throughout the reference implementation, you will see reference to _Contoso Bicycle_. They are a fictional small and fast-growing startup that provides online web services to its clientele on the west coast of North America. They have no on-premises data centers and all their containerized line of business applications are now about to be orchestrated by secure, enterprise-ready AKS clusters. You can read more about [their requirements and their IT team composition](./contoso-bicycle/README.md). This narrative provides grounding for some implementation details, naming conventions, etc. You should adapt as you see fit.
+The material here is relatively dense. We strongly encourage you to dedicate time to walk through these instructions, with a mind to learning. We do NOT provide any "one click" deployment here. However, once you've understood the components involved and identified the shared responsibilities between your team and your great organization, it is encouraged that you build suitable, auditable deployment processes around your final infrastructure.
 
-Finally, this implementation uses a small custom application as an example workload. This workload is minimally interesting, as it is here exclusively to help you experience the infrastructure and illustrate network and security controls in place.
+Finally, this implementation uses a small custom application as an example workload. This workload is minimally interesting, as it is here exclusively to help you experience the infrastructure and illustrate network and security controls in place. We'll introduce the workload in more detail later in the instructions.
 
 ### Core architecture components
 
@@ -29,12 +35,12 @@ Finally, this implementation uses a small custom application as an example workl
   * Private Cluster
 * Azure Virtual Networks (hub-spoke)
   * Hub-proxied DNS
+  * Azure Firewall managed egress
 * Azure Application Gateway (WAF)
 * AKS-managed Internal Load Balancers
-* Azure Firewall
 * Azure Bastion for maintenance access
 
-#### In-cluster OSS components
+#### In-cluster Open-Source Software components
 
 * [Flux GitOps Operator](https://fluxcd.io)
 * [Traefik Ingress Controller](https://doc.traefik.io/traefik/v1.7/user-guide/kubernetes/)
@@ -46,7 +52,7 @@ Finally, this implementation uses a small custom application as an example workl
 
 ## Deploy the reference implementation
 
-A deployment of AKS-hosted workloads typically experiences a separation of duties and lifecycle management in the area of prerequisites, the host network, the cluster infrastructure, and finally the workload itself. This reference implementation is similar. Also, be aware our primary purpose is to illustrate the topology and decisions of a baseline cluster. We feel a "step-by-step" flow will help you learn the pieces of the solution and give you insight into the relationship between them. Ultimately, lifecycle/SDLC management of your cluster and its dependencies will depend on your situation (team roles, organizational standards, etc), and will be implemented as appropriate for your organizational and compliance needs.
+A deployment of AKS-hosted workloads typically experiences a separation of duties and lifecycle management in the area of prerequisites, the host network, the cluster infrastructure, and finally the workload itself. This reference implementation is similar. Also, be aware our primary purpose is to illustrate the topology and decisions made in this cluster. We feel a "step-by-step" flow will help you learn the pieces of the solution and give you insight into the relationship between them. Ultimately, lifecycle/SDLC management of your cluster and its dependencies will depend on your situation (team roles, organizational standards, etc), and will be implemented as appropriate for your organizational and compliance needs.
 
 **Please start this learning journey in the _Preparing for the cluster_ section.** If you follow this through the end, you'll have our recommended baseline cluster for regulated industries installed, with an end-to-end sample workload running for you to reference in your own Azure subscription.
 
@@ -55,8 +61,8 @@ A deployment of AKS-hosted workloads typically experiences a separation of dutie
 There are considerations that must be addressed before you start deploying your cluster. Do I have enough permissions in my subscription and AD tenant to do a deployment of this size? How much of this will be handled by my team directly vs having another team be responsible?
 
 * [ ] Begin by ensuring you [install and meet the prerequisites](./01-prerequisites.md)
-* [ ] [Procure client-facing and AKS Ingress Controller TLS certificates](./02-ca-certificates.md)
 * [ ] [Plan your Azure Active Directory integration](./03-aad.md)
+* [ ] [Procure client-facing and AKS Ingress Controller TLS certificates](./02-ca-certificates.md)
 
 ### 2. Build target network
 

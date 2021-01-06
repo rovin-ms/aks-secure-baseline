@@ -106,6 +106,7 @@
         "networkContributorRole": "[concat(subscription().Id, '/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7')]",
         "monitoringMetricsPublisherRole": "[concat(subscription().Id, '/providers/Microsoft.Authorization/roleDefinitions/3913510d-42f4-4e42-8a64-420c390055eb')]",
         "acrPullRole": "[concat(subscription().Id, '/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+        "dnsZoneContributorRole": "[concat(subscription().id, '/providers/Microsoft.Authorization/roleDefinitions/befefa01-2a29-4197-83a8-272ff33ce314')]",
         //"managedIdentityOperatorRole": "[concat(subscription().Id, '/providers/Microsoft.Authorization/roleDefinitions/f1a07417-d97a-45cb-824c-7a7467783830')]",
         //"virtualMachineContributorRole": "[concat(subscription().Id, '/providers/Microsoft.Authorization/roleDefinitions/9980e02c-c2be-4d73-94e8-173b1dc7cf3c')]",
         //"readerRole": "[concat(subscription().Id, '/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
@@ -131,13 +132,13 @@
         "keyVaultName": "[concat('kv-', variables('clusterName'))]"
     },
     "resources": [
-        /*{
+        {
             "name": "[concat('mi-', variables('clusterName'), '-controlplane')]",
             "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
             "apiVersion": "2018-11-30",
             "location": "[parameters('location')]",
-            "comments": "The control plane identity used by the cluster."
-        },*/
+            "comments": "The control plane identity used by the cluster. Used for networking access (VNET joining and DNS updating)"
+        },
         {
             "name": "mi-appgateway-frontend",
             "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
@@ -561,7 +562,7 @@
             "properties": {},
             "resources": [
                 {
-                    "name": "bu0001a0005-01",
+                    "name": "bu0001a0005-00",
                     "type": "A",
                     "apiVersion": "2018-09-01",
                     "dependsOn": [
@@ -801,7 +802,7 @@
             "name": "EnsureClusterHasRbacToTargetSubnets",
             "apiVersion": "2017-05-10",
             "dependsOn": [
-                "[resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName'))]"
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))]"
             ],
             "resourceGroup": "[variables('vNetResourceGroup')]",
             "properties": {
@@ -811,43 +812,60 @@
                     "contentVersion": "1.0.0.0",
                     "resources": [
                         {
-                            "name": "[concat(split(parameters('targetVnetResourceId'),'/')[8], '/snet-cluster-systemnodepool/Microsoft.Authorization/', guid(variables('vnetSystemNodePoolSubnetResourceId'), variables('networkContributorRole')))]",
+                            "name": "[concat(split(parameters('targetVnetResourceId'),'/')[8], '/snet-cluster-systemnodepool/Microsoft.Authorization/', guid(variables('vnetSystemNodePoolSubnetResourceId'), variables('networkContributorRole'), concat('mi-', variables('clusterName'), '-controlplane')))]",
                             "type": "Microsoft.Network/virtualNetworks/subnets/providers/roleAssignments",
-                            "apiVersion": "2018-09-01-preview",
+                            "apiVersion": "2020-04-01-preview",
                             "properties": {
                                 "roleDefinitionId": "[variables('networkContributorRole')]",
-                                "principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName')), '2020-11-01', 'Full').identity.principalId]",
+                                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))).principalId]",
+                                //"principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName')), '2020-11-01', 'Full').identity.principalId]",
                                 "principalType": "ServicePrincipal"
                             }
                         },
                         {
-                            "name": "[concat(split(parameters('targetVnetResourceId'),'/')[8], '/snet-cluster-inscopenodepools/Microsoft.Authorization/', guid(variables('vnetInScopeNodePoolSubnetResourceId'), variables('networkContributorRole')))]",
+                            "name": "[concat(split(parameters('targetVnetResourceId'),'/')[8], '/snet-cluster-inscopenodepools/Microsoft.Authorization/', guid(variables('vnetInScopeNodePoolSubnetResourceId'), variables('networkContributorRole'), concat('mi-', variables('clusterName'), '-controlplane')))]",
                             "type": "Microsoft.Network/virtualNetworks/subnets/providers/roleAssignments",
-                            "apiVersion": "2018-09-01-preview",
+                            "apiVersion": "2020-04-01-preview",
                             "properties": {
                                 "roleDefinitionId": "[variables('networkContributorRole')]",
-                                "principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName')), '2020-11-01', 'Full').identity.principalId]",
+                                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))).principalId]",
+                                //"principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName')), '2020-11-01', 'Full').identity.principalId]",
                                 "principalType": "ServicePrincipal"
                             }
                         },
                         {
-                            "name": "[concat(split(parameters('targetVnetResourceId'),'/')[8], '/snet-cluster-outofscopenodepools/Microsoft.Authorization/', guid(variables('vnetOutOfScopeNodePoolSubnetResourceId'), variables('networkContributorRole')))]",
+                            "name": "[concat(split(parameters('targetVnetResourceId'),'/')[8], '/snet-cluster-outofscopenodepools/Microsoft.Authorization/', guid(variables('vnetOutOfScopeNodePoolSubnetResourceId'), variables('networkContributorRole'), concat('mi-', variables('clusterName'), '-controlplane')))]",
                             "type": "Microsoft.Network/virtualNetworks/subnets/providers/roleAssignments",
-                            "apiVersion": "2018-09-01-preview",
+                            "apiVersion": "2020-04-01-preview",
                             "properties": {
                                 "roleDefinitionId": "[variables('networkContributorRole')]",
-                                "principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName')), '2020-11-01', 'Full').identity.principalId]",
+                                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))).principalId]",
+                                //"principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName')), '2020-11-01', 'Full').identity.principalId]",
                                 "principalType": "ServicePrincipal"
                             }
                         },
                         {
-                            "name": "[concat(split(parameters('targetVnetResourceId'),'/')[8], '/snet-cluster-ingressservices/Microsoft.Authorization/', guid(variables('vnetIngressServicesSubnetResourceId'), variables('networkContributorRole')))]",
+                            "name": "[concat(split(parameters('targetVnetResourceId'),'/')[8], '/snet-cluster-ingressservices/Microsoft.Authorization/', guid(variables('vnetIngressServicesSubnetResourceId'), variables('networkContributorRole'), concat('mi-', variables('clusterName'), '-controlplane')))]",
                             "type": "Microsoft.Network/virtualNetworks/subnets/providers/roleAssignments",
-                            "apiVersion": "2018-09-01-preview",
+                            "apiVersion": "2020-04-01-preview",
                             "properties": {
                                 "roleDefinitionId": "[variables('networkContributorRole')]",
-                                "principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName')), '2020-11-01', 'Full').identity.principalId]",
-                                "scope": "[variables('vnetIngressServicesSubnetResourceId')]",
+                                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))).principalId]",
+                                //"principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName')), '2020-11-01', 'Full').identity.principalId]",
+                                //"scope": "[variables('vnetIngressServicesSubnetResourceId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "name": "[concat(concat('privatelink.', parameters('location'), '.azmk8s.io'), '/Microsoft.Authorization/', guid(resourceId('Microsoft.Network/privateDnsZones', concat('privatelink.', parameters('location'), '.azmk8s.io')), variables('networkContributorRole'), concat('mi-', variables('clusterName'), '-controlplane')))]",
+                            "type": "Microsoft.Network/privateDnsZones/providers/roleAssignments",
+                            "apiVersion": "2020-04-01-preview",
+                            "properties": {
+                                //"roleDefinitionId": "[variables('dnsZoneContributorRole')]",
+                                "roleDefinitionId": "[variables('networkContributorRole')]",
+                                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))).principalId]",
+                                //"principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName')), '2020-11-01', 'Full').identity.principalId]",
+                                //"scope": "[variables('vnetIngressServicesSubnetResourceId')]",
                                 "principalType": "ServicePrincipal"
                             }
                         }
@@ -1225,13 +1243,14 @@
         },
         {
             "type": "Microsoft.ContainerService/managedClusters",
-            "apiVersion": "2020-11-01",
+            "apiVersion": "2020-12-01",
             "name": "[variables('clusterName')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.OperationsManagement/solutions', variables('containerInsightsSolutionName'))]"/*,
-                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))]",
-                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities/providers/roleAssignments', 'podmi-ingress-controller', 'Microsoft.Authorization', guid(resourceGroup().id, variables('managedIdentityOperatorRole')))]",
+                "[resourceId('Microsoft.OperationsManagement/solutions', variables('containerInsightsSolutionName'))]",
+                "[resourceId(variables('vNetResourceGroup'), 'Microsoft.Resources/deployments', 'EnsureClusterHasRbacToTargetSubnets')]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))]"
+                /*"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities/providers/roleAssignments', 'podmi-ingress-controller', 'Microsoft.Authorization', guid(resourceGroup().id, variables('managedIdentityOperatorRole')))]",
                 "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'podmi-ingress-controller')]"*/
             ],
             "properties": {
@@ -1390,28 +1409,31 @@
                     "tenantID": "[parameters('k8sRbacAadProfileTenantId')]"
                 },
                 "autoScalerProfile": {
-                    "scan-interval": "10s",
+                    "balance-similar-node-groups": "false",
+                    "expander": "random",
+                    "max-empty-bulk-delete": "10",
+                    "max-graceful-termination-sec": "600",
+                    "max-node-provision-time": "15m",
+                    "max-total-unready-percentage": "45",
+                    "new-pod-scale-up-delay": "0s",
+                    "ok-total-unready-count": "3",
                     "scale-down-delay-after-add": "10m",
                     "scale-down-delay-after-delete": "20s",
                     "scale-down-delay-after-failure": "3m",
                     "scale-down-unneeded-time": "10m",
                     "scale-down-unready-time": "20m",
                     "scale-down-utilization-threshold": "0.5",
-                    "max-graceful-termination-sec": "600",
-                    "balance-similar-node-groups": "false",
-                    "expander": "random",
+                    "scan-interval": "10s",
                     "skip-nodes-with-local-storage": "true",
-                    "skip-nodes-with-system-pods": "true",
-                    "max-empty-bulk-delete": "10",
-                    "max-total-unready-percentage": "45",
-                    "ok-total-unready-count": "3"
+                    "skip-nodes-with-system-pods": "true"
                 },
                 /*"autoUpgradeProfile": {
                     "upgradeChannel": "none"
                 },*/
                 "apiServerAccessProfile": {
-                    "authorizedIPRanges": "[parameters('clusterAuthorizedIPRanges')]",
-                    "enablePrivateCluster": false
+                    /*"authorizedIPRanges": "[parameters('clusterAuthorizedIPRanges')]",*/
+                    "enablePrivateCluster": true,
+                    "privateDNSZone": "[resourceId(variables('vNetResourceGroup'), 'Microsoft.Network/privateDnsZones', concat('privatelink.', parameters('location') ,'.azmk8s.io'))]"
                 },
                 "podIdentityProfile": { 
                     "enabled": true,
@@ -1430,11 +1452,11 @@
                 }
             },
             "identity": {
-                "type": "SystemAssigned"
-                /*"type": "UserAssigned",
+                //"type": "SystemAssigned"
+                "type": "UserAssigned",
                 "userAssignedIdentities": {
                     "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', concat('mi-', variables('clusterName'), '-controlplane'))]": {}
-                }*/
+                }
             },
             "resources": [
                 {

@@ -59,7 +59,7 @@ GitOps allows a team to author Kubernetes manifest files, persist them in their 
 
    ```bash
    # Get your ACR cluster name
-   export ACR_NAME=$(az deployment group show --resource-group rg-bu0001a0008 -n cluster-stamp --query properties.outputs.containerRegistryName.value -o tsv)
+   export ACR_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.containerRegistryName.value -o tsv)
 
    # Import cluster management images hosted in public container registries
    az acr import --source docker.io/library/memcached:1.5.20 -n $ACR_NAME

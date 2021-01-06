@@ -48,6 +48,7 @@
         "hubBastionSubnetResourceId": "[resourceId(variables('hubRgName'), 'Microsoft.Network/virtualNetworks/subnets', variables('hubNetworkName'), 'AzureBastionSubnet')]",
 
         "acrPrivateDnsZonesName": "privatelink.azurecr.io",
+        "aksPrivateDnsZonesName": "[concat('privatelink.', parameters('location'), '.azmk8s.io')]",
         "akvPrivateDnsZonesName": "privatelink.vaultcore.azure.net",
 
         "primaryClusterPipName": "[concat('pip-', variables('orgAppId'), '-00')]"
@@ -543,17 +544,17 @@
         {
             "name": "[variables('acrPrivateDnsZonesName')]",
             "type": "Microsoft.Network/privateDnsZones",
-            "apiVersion": "2018-09-01",
+            "apiVersion": "2020-06-01",
             "location": "global",
             "comments": "Enabling Azure Container Registry Private Link on vnet.",
             "properties": {},
             "resources": [
                 {
-                    "name": "[uniqueString(resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName')))]",
+                    "name": "[concat('to_', variables('clusterVNetName'))]",
                     "type": "virtualNetworkLinks",
-                    "apiVersion": "2018-09-01",
+                    "apiVersion": "2020-06-01",
                     "location": "global",
-                    "comments": "Enabling Azure Container Registry Private Link on cluster vnet.",
+                    "comments": "Enabling cluster vnet private zone DNS lookup - used by cluster vnet for direct DNS queries (ones not proxied via the hub).",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]",
                         "[resourceId('Microsoft.Network/privateDnsZones', variables('acrPrivateDnsZonesName'))]"
@@ -561,6 +562,65 @@
                     "properties": {
                         "virtualNetwork": {
                             "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
+                        },
+                        "registrationEnabled": false
+                    }
+                },
+                {
+                    "name": "[concat('to_', variables('hubNetworkName'))]",
+                    "type": "virtualNetworkLinks",
+                    "apiVersion": "2020-06-01",
+                    "location": "global",
+                    "comments": "Enabling hub vnet private zone DNS lookup for ACR - used by azure firewall's dns proxy.",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/privateDnsZones', variables('acrPrivateDnsZonesName'))]"
+                    ],
+                    "properties": {
+                        "virtualNetwork": {
+                            "id": "[parameters('hubVnetResourceId')]"
+                        },
+                        "registrationEnabled": false
+                    }
+                }
+            ]
+        },
+        {
+            "name": "[variables('aksPrivateDnsZonesName')]",
+            "type": "Microsoft.Network/privateDnsZones",
+            "apiVersion": "2020-06-01",
+            "location": "global",
+            "comments": "Enabling AKS Private Link on vnet.",
+            "properties": {},
+            "resources": [
+                {
+                    "name": "[concat('to_', variables('clusterVNetName'))]",
+                    "type": "virtualNetworkLinks",
+                    "apiVersion": "2020-06-01",
+                    "location": "global",
+                    "comments": "Enabling cluster vnet private zone DNS lookup - used by cluster vnet for direct DNS queries (ones not proxied via the hub).",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]",
+                        "[resourceId('Microsoft.Network/privateDnsZones', variables('aksPrivateDnsZonesName'))]"
+                    ],
+                    "properties": {
+                        "virtualNetwork": {
+                            "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
+                        },
+                        "registrationEnabled": false
+                    }
+                },
+                {
+                    "name": "[concat('to_', variables('hubNetworkName'))]",
+                    "type": "virtualNetworkLinks",
+                    "apiVersion": "2020-06-01",
+                    "location": "global",
+                    "comments": "Enabling hub vnet private zone DNS lookup for ACR - used by azure firewall's dns proxy.",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/privateDnsZones', variables('aksPrivateDnsZonesName'))]"
+                    ],
+                    "properties": {
+                        "virtualNetwork": {
+                            "id": "[parameters('hubVnetResourceId')]"
                         },
                         "registrationEnabled": false
                     }
@@ -576,9 +636,9 @@
             "properties": {},
             "resources": [
                 {
-                    "name": "[uniqueString(resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName')))]",
+                    "name": "[concat('to_', variables('clusterVNetName'))]",
                     "type": "virtualNetworkLinks",
-                    "apiVersion": "2018-09-01",
+                    "apiVersion": "2020-06-01",
                     "location": "global",
                     "comments": "Enabling Azure Key Vault Private Link on cluster vnet.",
                     "dependsOn": [
@@ -588,6 +648,22 @@
                     "properties": {
                         "virtualNetwork": {
                             "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
+                        },
+                        "registrationEnabled": false
+                    }
+                },
+                {
+                    "name": "[concat('to_', variables('hubNetworkName'))]",
+                    "type": "virtualNetworkLinks",
+                    "apiVersion": "2020-06-01",
+                    "location": "global",
+                    "comments": "Enabling hub vnet private zone DNS lookup for ACR - used by azure firewall's dns proxy.",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/privateDnsZones', variables('akvPrivateDnsZonesName'))]"
+                    ],
+                    "properties": {
+                        "virtualNetwork": {
+                            "id": "[parameters('hubVnetResourceId')]"
                         },
                         "registrationEnabled": false
                     }

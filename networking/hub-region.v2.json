@@ -566,8 +566,8 @@
                                 }*/
                             ]
                         }
-                    },
-                    {
+                    }//,
+                    /*{
                         "name": "AKS-Regional-Requirements",
                         "properties": {
                             "action": {
@@ -609,7 +609,7 @@
                                 }
                             ]
                         }
-                    }
+                    }*/
                 ],
                 "applicationRuleCollections": [
                     {
@@ -755,7 +755,7 @@
                                         "changelogs.ubuntu.com"
                                     ]
                                 },
-                                {
+                                /*{
                                     "name": "ubuntu-misc-https",
                                     "description": "Other common Ubuntu requests. Can block if desired.",
                                     "sourceIpGroups": [
@@ -787,7 +787,7 @@
                                     "targetFqdns": [
                                         "ifconfig.co"
                                     ]
-                                },
+                                },*/
                                 {
                                     "name": "azure-monitor",
                                     "description": "All required for Azure Monitor for containers per https://docs.microsoft.com/azure/aks/limit-egress-traffic#azure-monitor-for-containers",
@@ -831,7 +831,7 @@
                             ]
                         }
                     },
-                    {
+                    /*{
                         "name": "AKS-Regional-Requirements",
                         "properties": {
                             "action": {
@@ -857,7 +857,7 @@
                                 }
                             ]
                         }
-                    },
+                    },*/
                     {
                         "name": "Flux-Requirements",
                         "properties": {

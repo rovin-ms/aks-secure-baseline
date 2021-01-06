@@ -1,12 +1,12 @@
 # Deploy the Cluster Spoke
 
-The prerequisites for the [AKS secure baseline cluster](./) are now completed with [Azure AD group and user work](./03-aad.md) performed in the prior steps. Now we will start with our first Azure resource deployment, the network resources.
+TODO
 
 ## Steps
 
 1. Deploy the cluster spoke.
 
-   The virtual network in which the AKS cluster, and its surrounding resources will be created in will be created here.
+   The virtual network in which the AKS cluster, and its surrounding resources will be created in is created here.
 
    ```bash
    # [This takes about ten minutes to run.]

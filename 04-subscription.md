@@ -1,6 +1,6 @@
-# Deploy Subscription Resources
+# Prepare target subscription
 
-The prerequisites for the [AKS secure baseline cluster](./) are now completed with [Azure AD group and user work](./03-aad.md) performed in the prior steps. Now we will start prepping our subscription for the resources that are to follow.
+TODO
 
 This reference implementation is split across several resource groups. This is to replicate the fact that some organizations will split certain types of resources (such as networking), in to specialized subscriptions (such as a Connectivity subscription). We expect you to explore this reference implementation within a single subscription, but when you implement this at your organization, you may need to take what you've learned here and apply it to your specific subscription topology.
 
@@ -8,11 +8,11 @@ This reference implementation is split across several resource groups. This is t
 
 The following three resource groups will be created.
 
-| Name                            | Purpose                |
-|---------------------------------|------------------------|
-| rg-enterprise-networking-hubs   | Contains all of your organization's regional hubs. Hubs include an egress firewall, Azure Bastion, and Log Analytics for network logging. |
+| Name                            | Purpose                                  |
+|---------------------------------|------------------------------------------|
+| rg-enterprise-networking-hubs   | Contains all of your organization's regional hubs. Hubs include an egress firewall, Azure Bastion, and Log Analytics for network related logging. |
 | rg-enterprise-networking-spokes | Contains all of your organization's regional spokes and related networking resources. All spokes will peer with their regional hub and most subnets will egress through the regional firewall in the hub. |
-| rg-bu0001a0005                  | Contains the workload. |
+| rg-bu0001a0005                  | Contains the regulated cluster workload. |
 
 ## Azure Policy
 
@@ -28,9 +28,9 @@ To help govern our resources, there are policies we apply over the scope of thes
 
 As mentioned in the Azure Policy section above, we enable the following Azure Security Center's services.
 
-* Azure Defender for Kubernetes
-* Azure Defender for Container Service
-* Azure Defender for Key Vault
+* [Azure Defender for Kubernetes](https://docs.microsoft.com/azure/security-center/defender-for-kubernetes-introduction)
+* [Azure Defender for Container Registries](https://docs.microsoft.com/azure/security-center/defender-for-container-registries-introduction)
+* [Azure Defender for Key Vault](https://docs.microsoft.com/azure/security-center/defender-for-key-vault-introduction)
 
 Not only do we enable them by default, but also set up an Azure Policy that ensures they stay enabled.
 
@@ -50,7 +50,7 @@ Not only do we enable them by default, but also set up an Azure Policy that ensu
    az deployment sub create -f subscription.json -l centralus
    ```
 
-   If you do not have permissions on your subscription to enable Azure Defender (which requires the Azure RBAC role of _Subscription Owner_ or _Security Admin_), then instead execute this. This will not enable Azure Defender services nor will Azure Policy attempt to enable the same (the policy will still be created, but in audit-only mode).
+   If you do not have permissions on your subscription to enable Azure Defender (which requires the Azure RBAC role of _Subscription Owner_ or _Security Admin_), then instead execute the following. This will not enable Azure Defender services nor will Azure Policy attempt to enable the same (the policy will still be created, but in audit-only mode).
 
    ```bash
    az deployment sub create -f subscription.json -l centralus -p enableAzureDefender=false enforceAzureDefenderAutoDeployPolicies=false

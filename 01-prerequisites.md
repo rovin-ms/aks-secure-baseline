@@ -1,6 +1,6 @@
 # Prerequisites
 
-This is the starting point for the instructions on deploying the [AKS Secure Baseline reference implementation](./README.md). There is required access and tooling you'll need in order to accomplish this. Follow the instructions below and on the subsequent pages so that you can get your environment ready to proceed with the AKS cluster creation.
+This is the starting point for the instructions on deploying the [AKS Baseline for Regulated Industries reference implementation](./README.md). There is required access and tooling you'll need in order to accomplish this. Follow the instructions below and on the subsequent pages so that you can get your environment ready to proceed with the AKS cluster creation.
 
 ## Steps
 
@@ -8,9 +8,8 @@ This is the starting point for the instructions on deploying the [AKS Secure Bas
 
    > :warning: The user or service principal initiating the deployment process _must_ have the following minimal set of Azure Role-Based Access Control (RBAC) roles:
    >
-   > * [Contributor role](https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#contributor) is _required_ at the subscription level to have the ability to create resource groups and perform deployments.
-   > * [User Access Administrator role](https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#user-access-administrator) is _required_ at the subscription level since you'll be granting least-privilege RBAC access to managed identities.
-   >   * One such example is detailed in the [Container Insights documentation](https://docs.microsoft.com/azure/azure-monitor/insights/container-insights-troubleshoot#authorization-error-during-onboarding-or-update-operation).
+   > * [Contributor role](https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#contributor) is _required_ at the _subscription_ level to have the ability to create resource groups and perform deployments.
+   > * [User Access Administrator role](https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#user-access-administrator) is _required_ at the subscription level since you'll be performing role assignments to managed identities.
 
 1. An Azure AD tenant to associate your Kubernetes RBAC configuration to.
 
@@ -23,12 +22,10 @@ This is the starting point for the instructions on deploying the [AKS Secure Bas
 
    [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)
 
-1. Clone/download this repo locally, or even better fork this repository.
-
-   > :twisted_rightwards_arrows: If you have forked this reference implementation repo, you'll be able to customize some of the files and commands for a more personalized experience; also ensure references to repos mentioned are updated to use your own (e.g. the following `GITHUB_REPO`).
+1. Fork this repository and clone this repo locally.
 
    ```bash
-   export GITHUB_REPO=https://github.com/mspnp/aks-secure-baseline.git
+   export GITHUB_REPO=https://github.com/YOUR_GH_ORG_OR_USER/aks-regulated-baseline.git
    git clone $GITHUB_REPO
    ```
 

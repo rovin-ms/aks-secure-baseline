@@ -34,7 +34,7 @@ Following the steps below you will result in an Azure AD configuration that will
 1. Login into the tenant where Kubernetes Cluster API authorization will be associated with. _Skip if using the same tenant for both Azure RBAC and Kubernetes RBAC._
 
    ```bash
-   az login --tenant <Replace-With-ClusterApi-AzureAD-TenantId> --allow-no-subscriptions
+   az login -t <Replace-With-ClusterApi-AzureAD-TenantId> --allow-no-subscriptions
    ```
 
 1. Capture the Azure AD Tenant ID that will be associated with your cluster's Kubernetes RBAC for data plane access.
@@ -51,7 +51,7 @@ Following the steps below you will result in an Azure AD configuration that will
 
    ```bash
    export AADOBJECTNAME_GROUP_CLUSTERADMIN=cluster-admins-bu0001a000500
-   export AADOBJECTID_GROUP_CLUSTERADMIN=$(az ad group create --display-name $AADOBJECTNAME_GROUP_CLUSTERADMIN --mail-nickname $AADOBJECTNAME_GROUP_CLUSTERADMIN --query objectId -o tsv)
+   export AADOBJECTID_GROUP_CLUSTERADMIN=$(az ad group create --display-name $AADOBJECTNAME_GROUP_CLUSTERADMIN --mail-nickname $AADOBJECTNAME_GROUP_CLUSTERADMIN --description "Principals in this group are cluster admins in the bu001a000500 cluster." --query objectId -o tsv)
    ```
 
 1. Create a "break-glass" Cluster Admin user for your AKS cluster.
@@ -67,7 +67,7 @@ Following the steps below you will result in an Azure AD configuration that will
 1. Add the new admin user to the new admin security group.
 
    ```bash
-   az ad group member add --group $AADOBJECTID_GROUP_CLUSTERADMIN --member-id $AADOBJECTID_USER_CLUSTERADMIN
+   az ad group member add -g $AADOBJECTID_GROUP_CLUSTERADMIN --member-id $AADOBJECTID_USER_CLUSTERADMIN
    ```
 
 1. Create/identify additional security groups to map onto other Kubernetes RBAC roles. _Optional._

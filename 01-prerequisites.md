@@ -38,4 +38,4 @@ This is the starting point for the end-to-end instructions on deploying the [AKS
 
 ### Next step
 
-:arrow_forward: [Prep for Azure Active Directory integration](./03-aad.md)
+:arrow_forward: [Prep for Azure Active Directory integration](./03-aad.md).

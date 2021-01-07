@@ -35,9 +35,10 @@ We are going to be using Azure Image Builder (Preview) to generate a Kubernetes-
 1. Create the AKS jump box image builder network spoke.
 
    ```bash
+   export RESOURCEID_VNET_HUB=$(az deployment group show -g rg-enterprise-networking-hubs -n hub-region.v0 --query properties.outputs.hubVnetId.value -o tsv)
+
    # [This takes about one minute to run.]
-   HUB_VNET_ID=$(az deployment group show -g rg-enterprise-networking-hubs -n hub-region.v0 --query properties.outputs.hubVnetId.value -o tsv)
-   az deployment group create -g rg-enterprise-networking-spokes -f networking/spoke-BU0001A0005-00.json -p location=eastus2 hubVnetResourceId="${HUB_VNET_ID}"
+   az deployment group create -g rg-enterprise-networking-spokes -f networking/spoke-BU0001A0005-00.json -p location=eastus2 hubVnetResourceId="${RESOURCEID_VNET_HUB}"
    ```
 
 1. Update the regional hub deployment to account for the requirements of the spoke.
@@ -45,10 +46,10 @@ We are going to be using Azure Image Builder (Preview) to generate a Kubernetes-
    Now that spoke network is created, the hub network's firewall needs to be updated to support the Azure Image Builder process that will land in there. The hub firewall does NOT have any default permissive egress rules, and as such, each needed egress endpoint needs to be specifically allowed.
 
    ```bash
-   AIB_SUBNET_ID=$(az deployment group show -g rg-enterprise-networking-spokes -n spoke-BU0001A0005-00 --query properties.outputs.imageBuilderSubnetResourceId.value -o tsv)
+   export RESOURCEID_SUBNET_AIB=$(az deployment group show -g rg-enterprise-networking-spokes -n spoke-BU0001A0005-00 --query properties.outputs.imageBuilderSubnetResourceId.value -o tsv)
 
    # [This takes about five minutes to run.]
-   az deployment group create -g rg-enterprise-networking-hubs -f networking/hub-region.v1.json -p location=eastus2 aksImageBuilderSubnetResourceId="${AIB_SUBNET_ID}"
+   az deployment group create -g rg-enterprise-networking-hubs -f networking/hub-region.v1.json -p location=eastus2 aksImageBuilderSubnetResourceId="${RESOURCEID_SUBNET_AIB}"
    ```
 
 ### Build and deploy the jump box image
@@ -75,7 +76,7 @@ Now that we have our image building network created, egressing through our hub, 
    ROLEID_IMGDEPLOY=$(az deployment sub show -n DeployAibRbacRoles --query 'properties.outputs.roleResourceIds.value.customImageBuilderImageCreationRole.guid' -o tsv)
 
    # [This takes about one minute to run.]
-   az deployment group create -g rg-bu0001a0005 -u https://raw.githubusercontent.com/mspnp/aks-jumpbox-imagebuilder/main/azuredeploy.json -p buildInVnetResourceGroupName=rg-enterprise-networking-spokes buildInVnetName=vnet-spoke-BU0001A0005-00 buildInVnetSubnetName=snet-imagebuilder location=eastus2 imageBuilderNetworkingRoleGuid="${ROLEID_NETWORKING}" imageBuilderImageCreationRoleGuid="${ROLEID_IMGDEPLOY}" imageDestinationResourceGroupName=rg-bu0001a0005 -n CreateJumpboxImageTemplate
+   az deployment group create -g rg-bu0001a0005 -u https://raw.githubusercontent.com/mspnp/aks-jumpbox-imagebuilder/main/azuredeploy.json -p buildInVnetResourceGroupName=rg-enterprise-networking-spokes buildInVnetName=vnet-spoke-BU0001A0005-00 buildInVnetSubnetName=snet-imagebuilder location=eastus2 imageBuilderNetworkingRoleGuid="${ROLEID_NETWORKING}" imageBuilderImageCreationRoleGuid="${ROLEID_IMGDEPLOY}" imageDestinationResourceGroupName=rg-bu0001a0005 -n CreateJumpBoxImageTemplate
    ```
 
 1. Build the AKS jump box image.
@@ -83,26 +84,28 @@ Now that we have our image building network created, egressing through our hub, 
    Now we'll build the actual VM golden image we will use for our jump box using Azure Image Builder. This uses the template created in the prior step and is executed under the authority of the managed identity (and its role assignments) also created in the prior step. There is no direct az cli command for this at this time.
 
    ```bash
-   IMAGE_TEMPLATE_NAME=$(az deployment group show -g rg-bu0001a0005 -n CreateJumpboxImageTemplate --query 'properties.outputs.imageTemplateName.value' -o tsv)
+   IMAGE_TEMPLATE_NAME=$(az deployment group show -g rg-bu0001a0005 -n CreateJumpBoxImageTemplate --query 'properties.outputs.imageTemplateName.value' -o tsv)
 
    # [This takes about thirty minutes to run.]
    az resource invoke-action -g rg-bu0001a0005 --resource-type Microsoft.VirtualMachineImages/imageTemplates -n $IMAGE_TEMPLATE_NAME --action Run
    ```
 
+   As mentioned above, this does take a significant amount of time to run while the image building is happening. Feel free to read ahead, but you should not proceed until this is complete. If you need to perform this walk through multiple times, we highly suggest you create this image in a place that can survive the deleting and recreating of this reference implementation to save yourself the time in a future execution of this guide.
+
 1. Delete image building resources. _Optional._
 
-   Image building can be seen as a transient process, and as such, you may wish to remove all resources used as part of the process. At this point, if you are happy with your generated image, you can delete the image template, AIB user managed identity, and even the network spoke + related Azure Firewall rules. See instructions to do so in the [AKS Jump Box Image Builder guidance](https://github.com/mspnp/aks-jumpbox-imagebuilder#broom-clean-up-resources).
+   Image building can be seen as a transient process, and as such, you may wish to remove all resources used as part of the process. At this point, if you are happy with your generated image, you can delete the image template (a hidden resource in `rg-bu0001a0005`), AIB user managed identity (`mi-aks-jumpbox-imagebuilder-...`) and its role assignments, and even the network spoke + related Azure Firewall rules. See instructions to do so in the [AKS Jump Box Image Builder guidance](https://github.com/mspnp/aks-jumpbox-imagebuilder#broom-clean-up-resources) for more details.
 
    Deleting these build-time resources will not delete the golden VM image you just created for your jump box. For the purposes of this walk through, there is no harm in leaving these transient resources behind.
 
 ## :closed_lock_with_key: Security
 
-This specific jump box image is considered general purpose; its creation process and supply chain has not been hardened. For example, the jump box image is built by pulling OS package updates from Ubuntu and Microsoft public servers; additionally, Azure CLI, Helm, and Terraform are installed straight from the Internet. Ensure processes like these adhere to your organizational policies; pulling updates from your organization's patch servers, and storing well-known 3rd party dependencies in trusted locations. If all necessary resources have been brought "network-local", the NSG and Azure Firewall allowances should be made even tighter. Also apply all standard OS hardening procedures your organization requires for privileged access machines such as these. All jump boxes (or similar access solutions) should be hardened and monitored, as they by design they span two distinct security zones. **Both the jump box compute (and its image/container) is an attack vector that needs to be considered when evaluating cluster access solutions** and is considered as part of your compliance concerns.
+This specific jump box image is considered general purpose; its creation process and supply chain has not been hardened. For example, the jump box image is built by pulling OS package updates from Ubuntu and Microsoft public servers; additionally, Azure CLI, Helm, and Terraform are installed straight from the Internet. Ensure processes like these adhere to your organizational policies; pulling updates from your organization's patch servers, and storing well-known 3rd party dependencies in trusted locations that are available from your builder's subnet. If all necessary resources have been brought "network-local", the NSG and Azure Firewall allowances should be made even tighter. Also apply all standard OS hardening procedures your organization requires for privileged access machines such as these. All jump boxes (or similar access solutions) should be hardened and monitored, as they they span two distinct security zones. **Both the jump box compute (and its image/container) is an attack vector that needs to be considered when evaluating cluster access solutions** and is considered as part of your compliance concerns.
 
 ## Pipelines and other considerations
 
-Image building using Azure Image Builder lends itself well to having a secured, transient image building infrastructure. Consider building pipelines around the generation of hardened and approved images to create a repeatable and auditable process. Also, especially if using Azure Image Builder as part of your final solution, consider pushing your images to your organization's [Azure Shared Image Gallery](https://docs.microsoft.com/azure/virtual-machines/shared-image-galleries) for geo-distribution and added management capabilities. These features were skipped for this reference implementation to avoid added illustrative complexity/burden.
+Image building using Azure Image Builder lends itself well to having a secured, auditable, and transient image building infrastructure. Consider building pipelines around the generation of hardened and approved images to create a repeatably compliant process. Also, especially if using Azure Image Builder as part of your final solution, consider pushing your images to your organization's [Azure Shared Image Gallery](https://docs.microsoft.com/azure/virtual-machines/shared-image-galleries) for geo-distribution and added management capabilities. These features were skipped for this reference implementation to avoid added illustrative complexity/burden.
 
 ### Next step
 
-:arrow_forward: [Deploy the AKS cluster network spoke](./06-cluster-networking.md)
+:arrow_forward: [Deploy the AKS cluster network spoke](./06-cluster-networking.md).

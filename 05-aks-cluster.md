@@ -3,6 +3,7 @@
 TODO:
 
 * Figure out how to deal with the role assignment race condition.  The cluster managed identity might need to be its own deployment to give time for permissions to propagate ...
+* Add image name parameters properly
 
 Now that the [hub-spoke network is provisioned](./04-networking.md), the next step in the [AKS secure Baseline reference implementation](./) is deploying the AKS cluster and its adjacent Azure resources.
 

@@ -99,7 +99,7 @@
         },
         "jumpBoxImageResourceId": {
             "type": "string",
-            "defaultValue": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-bu0001a0005/providers/Microsoft.Compute/images/img-aksopsjb-20210104T145349"
+            "defaultValue": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-bu0001a0005/providers/Microsoft.Compute/images/img-aksopsjb-20210107T185242"
         }
     },
     "variables": {

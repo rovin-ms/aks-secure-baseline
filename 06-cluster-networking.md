@@ -1,12 +1,23 @@
 # Deploy the Cluster Spoke
 
-TODO
+A lot of the foundation has been put in place. You have a [regional hub](./04-networking-hub.md) in which your cluster traffic will egress and a [jump box image for cluster management](./05-aks-jumpboximage.md) built. Next you'll lay out the next critical component, the cluster's vnet (spoke).
+
+## Networking in this architecture
+
+The regional spoke network in which your cluster is laid into acts as the first line of defense for your cluster. This network perimeter forms a security boundary where you will restrict the network line of sight into your cluster's compute resources, gives your cluster the ability to use private link to talk to adjacent platform-as-a-service resources such as Key Vault and Azure Container Registry, and a layer to restrict and tunnel egressing traffic. All of this adds up to ensure that cluster traffic stays as isolated as possible and free from any possible external influence.
+
+## Expected results
+
+Your `rg-enterprise-networking-spokes` will be populated with the dedicated regional spoke network in which your cluster (and it's direct adjacent resources will be connected to). This spoke will have limited Internet exposure and will support NSGs at various levels to further limit network traffic as necessary.
+
+* The network spoke will be called `vnet-spoke-bu0001a0005-01` and have a range of `10.240.0.0/16`.
+* The spoke is broken into multiple subnets, each with a clearly defined purpose, appropriate IP range, and maximally restrictive NSG.
+* DNS will be forwarded to the hub to support firewall inspection/logging and to support more complex network considerations such as DNS forwarders to your organization's DNS servers.
+* The hub's firewall will be updated to allow only the necessary outbound traffic from this spoke's specific resource and workload needs.
 
 ## Steps
 
 1. Deploy the cluster spoke.
-
-   The virtual network in which the AKS cluster, and its surrounding resources will be created in is created here.
 
    ```bash
    # [This takes about ten minutes to run.]
@@ -16,7 +27,7 @@ TODO
 
 1. Update the regional hub deployment to account for the runtime requirements of the virtual network.
 
-   This is the same hub template you used before, but now updated with Azure Firewall rules specific to this AKS Cluster infrastructure.
+   This is a derivative of same hub template you used before, but now updated with Azure Firewall rules specific to this AKS Cluster infrastructure.
 
    ```bash
    NODEPOOL_SUBNET_RESOURCEIDS="['$(az deployment group show -g rg-enterprise-networking-spokes -n spoke-BU0001A0005-01 --query "properties.outputs.nodepoolSubnetResourceIds.value | join ('\',\'',@)" -o tsv)']"

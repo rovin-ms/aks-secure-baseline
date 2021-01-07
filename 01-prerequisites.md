@@ -11,18 +11,20 @@ This is the starting point for the end-to-end instructions on deploying the [AKS
    > * [Contributor role](https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#contributor) is _required_ at the _subscription_ level to have the ability to create resource groups, create & assign policy, and perform deployments at both the subscription and resource group level.
    > * [User Access Administrator role](https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#user-access-administrator) is _required_ at the subscription level since you'll be performing role assignments to managed identities.
 
-1. An Azure AD tenant to associate your Kubernetes RBAC configuration to.
+1. An Azure AD tenant to associate your Kubernetes RBAC Cluster API authentication to.
 
    > :warning: The user or service principal initiating the deployment process _must_ have the following minimal set of Azure AD permissions assigned:
    >
    > * Azure AD [User Administrator](https://docs.microsoft.com/azure/active-directory/users-groups-roles/directory-assign-admin-roles#user-administrator-permissions) is _required_ to create a "break glass" AKS admin Active Directory Security Group and User. Alternatively, you could get your Azure AD admin to create this for you when instructed to do so.
    >   * If you are not part of the User Administrator group in the tenant associated to your Azure subscription, consider [creating a new tenant](https://docs.microsoft.com/azure/active-directory/fundamentals/active-directory-access-create-new-tenant#create-a-new-tenant-for-your-organization) to use while evaluating this implementation.
 
-   The Azure AD tenant backing your cluster's internal RBAC does NOT need to be the same tenant associated with your Azure subscription. Your organization may have dedicated Azure AD tenants used specifically as a separation between Azure resource management, and application control plane access. Ensure you're following your organization's practices when it comes to separation of identity stores to ensure limited "impact radius" on any compromised accounts.
+   The Azure AD tenant backing your Cluster's API RBAC does NOT need to be the same tenant associated with your Azure subscription. Your organization may have dedicated Azure AD tenants used specifically as a separation between Azure resource management, and Kubernetes control plane access. Ensure you're following your organization's practices when it comes to separation of identity stores to ensure limited "impact radius" on any compromised accounts.
 
 1. Latest [Azure CLI installed](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest) or you can perform this from Azure Cloud Shell by clicking below.
 
    [![Launch Azure Cloud Shell](https://docs.microsoft.com/azure/includes/media/cloud-shell-try-it/launchcloudshell.png)](https://shell.azure.com)
+
+   Ensure you're logged into the subscription in which you plan on deploying this reference to.
 
 1. Fork this repository and clone this repo locally.
 

@@ -1,0 +1,18 @@
+#cloud-config
+users:
+  - default
+  - name: opsuser01
+    sudo: False
+    lock_passwd: True
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCZN5Z5SLMrdPpYg6Yfce6NKny1+02XS9dn4AVFjM6s7p0nazsU297+1ofx4GFPcW0aONhswqSX0mi4L1UAVfXEuSnZZbCwZfvjluIwTVK7W4Ium+fg60yrhyQU7tKOQYm2JMxl7hIiih6+ISGcsAmqrLYilyD0k/i7duze+nSvqIbfJOE+4jLkiAK6ptRhOdPCvrNtupIoLUFXz5wvQNoip4JERc2VKvZxG/sC7khVJhO2JIF4dhyWekOZhpSCQ8gbUAUVhsEIn7GrY9qvJVpDvKoLjHYrCbJec8Aqxinp2drw80rCetS3u6pYVFFBHXSECU7SY+N4ka8S2zhrxIb1mWzexWTtSggmdHXa4ZH0YPiqwONpX+VXs36Rxw1sND665A+Lh0vPGOx2eirMicx8wCpIBSTrWHDuYrUi/USRdKw6j6bb4LV+b1Kmf8LAmJKJ0uvWGuZCACQvuc5H+Ql3Qc93C72Vqa2At+KHTHYZ/T4C0GRUDVRD3c9ucengsKc=
+  - name: opsuser02
+    sudo: False
+    lock_passwd: True
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCZN5Z5SLMrdPpYg6Yfce6NKny1+02XS9dn4AVFjM6s7p0nazsU297+1ofx4GFPcW0aONhswqSX0mi4L1UAVfXEuSnZZbCwZfvjluIwTVK7W4Ium+fg60yrhyQU7tKOQYm2JMxl7hIiih6+ISGcsAmqrLYilyD0k/i7duze+nSvqIbfJOE+4jLkiAK6ptRhOdPCvrNtupIoLUFXz5wvQNoip4JERc2VKvZxG/sC7khVJhO2JIF4dhyWekOZhpSCQ8gbUAUVhsEIn7GrY9qvJVpDvKoLjHYrCbJec8Aqxinp2drw80rCetS3u6pYVFFBHXSECU7SY+N4ka8S2zhrxIb1mWzexWTtSggmdHXa4ZH0YPiqwONpX+VXs36Rxw1sND665A+Lh0vPGOx2eirMicx8wCpIBSTrWHDuYrUi/USRdKw6j6bb4LV+b1Kmf8LAmJKJ0uvWGuZCACQvuc5H+Ql3Qc93C72Vqa2At+KHTHYZ/T4C0GRUDVRD3c9ucengsKc=
+  - name: opsuser03
+    sudo: False
+    lock_passwd: True
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCZN5Z5SLMrdPpYg6Yfce6NKny1+02XS9dn4AVFjM6s7p0nazsU297+1ofx4GFPcW0aONhswqSX0mi4L1UAVfXEuSnZZbCwZfvjluIwTVK7W4Ium+fg60yrhyQU7tKOQYm2JMxl7hIiih6+ISGcsAmqrLYilyD0k/i7duze+nSvqIbfJOE+4jLkiAK6ptRhOdPCvrNtupIoLUFXz5wvQNoip4JERc2VKvZxG/sC7khVJhO2JIF4dhyWekOZhpSCQ8gbUAUVhsEIn7GrY9qvJVpDvKoLjHYrCbJec8Aqxinp2drw80rCetS3u6pYVFFBHXSECU7SY+N4ka8S2zhrxIb1mWzexWTtSggmdHXa4ZH0YPiqwONpX+VXs36Rxw1sND665A+Lh0vPGOx2eirMicx8wCpIBSTrWHDuYrUi/USRdKw6j6bb4LV+b1Kmf8LAmJKJ0uvWGuZCACQvuc5H+Ql3Qc93C72Vqa2At+KHTHYZ/T4C0GRUDVRD3c9ucengsKc=

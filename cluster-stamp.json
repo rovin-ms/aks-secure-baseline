@@ -32,13 +32,6 @@
                 "description": "The base 64 encoded AKS Ingress Controller public certificate (as .crt or .cer) to be stored in Azure Key Vault as secret and referenced by Azure Application Gateway as a trusted root certificate."
             }
         },
-        "clusterAuthorizedIPRanges": {
-            "type": "array",
-            "defaultValue": [],
-            "metadata": {
-                "description": "IP ranges authorized to contact the Kubernetes API server. Passing an empty array will result in no IP restrictions. If any are provided, remember to also provide the public IP of the egress Azure Firewall otherwise your nodes will not be able to talk to the API server (e.g. Flux)."
-            }
-        },
         "location": {
             "defaultValue": "eastus2",
             "type": "string",
@@ -100,6 +93,10 @@
         "jumpBoxImageResourceId": {
             "type": "string",
             "defaultValue": "/subscriptions/e1de8202-8d83-43f3-9477-c8fa8fd2e8c8/resourceGroups/rg-bu0001a0005/providers/Microsoft.Compute/images/img-aksopsjb-20210107T185242"
+        },
+        "jumpBoxCloudInitAsBase64": {
+            "type": "string",
+            "defaultValue": "I2Nsb3VkLWNvbmZpZwp1c2VyczoKICAtIGRlZmF1bHQKICAtIG5hbWU6IG9wc3VzZXIwMQogICAgc3VkbzogRmFsc2UKICAgIGxvY2tfcGFzc3dkOiBUcnVlCiAgICBzc2gtYXV0aG9yaXplZC1rZXlzOgogICAgICAtIHNzaC1yc2EgQUFBQUIzTnphQzF5YzJFQUFBQURBUUFCQUFBQmdRQ1pONVo1U0xNcmRQcFlnNllmY2U2TktueTErMDJYUzlkbjRBVkZqTTZzN3AwbmF6c1UyOTcrMW9meDRHRlBjVzBhT05oc3dxU1gwbWk0TDFVQVZmWEV1U25aWmJDd1pmdmpsdUl3VFZLN1c0SXVtK2ZnNjB5cmh5UVU3dEtPUVltMkpNeGw3aElpaWg2K0lTR2NzQW1xckxZaWx5RDBrL2k3ZHV6ZStuU3ZxSWJmSk9FKzRqTGtpQUs2cHRSaE9kUEN2ck50dXBJb0xVRlh6NXd2UU5vaXA0SkVSYzJWS3ZaeEcvc0M3a2hWSmhPMkpJRjRkaHlXZWtPWmhwU0NROGdiVUFVVmhzRUluN0dyWTlxdkpWcER2S29MakhZckNiSmVjOEFxeGlucDJkcnc4MHJDZXRTM3U2cFlWRkZCSFhTRUNVN1NZK040a2E4UzJ6aHJ4SWIxbVd6ZXhXVHRTZ2dtZEhYYTRaSDBZUGlxd09OcFgrVlhzMzZSeHcxc05ENjY1QStMaDB2UEdPeDJlaXJNaWN4OHdDcElCU1RyV0hEdVlyVWkvVVNSZEt3Nmo2YmI0TFYrYjFLbWY4TEFtSktKMHV2V0d1WkNBQ1F2dWM1SCtRbDNRYzkzQzcyVnFhMkF0K0tIVEhZWi9UNEMwR1JVRFZSRDNjOXVjZW5nc0tjPQogIC0gbmFtZTogb3BzdXNlcjAyCiAgICBzdWRvOiBGYWxzZQogICAgbG9ja19wYXNzd2Q6IFRydWUKICAgIHNzaC1hdXRob3JpemVkLWtleXM6CiAgICAgIC0gc3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBREFRQUJBQUFCZ1FDWk41WjVTTE1yZFBwWWc2WWZjZTZOS255MSswMlhTOWRuNEFWRmpNNnM3cDBuYXpzVTI5Nysxb2Z4NEdGUGNXMGFPTmhzd3FTWDBtaTRMMVVBVmZYRXVTblpaYkN3WmZ2amx1SXdUVks3VzRJdW0rZmc2MHlyaHlRVTd0S09RWW0ySk14bDdoSWlpaDYrSVNHY3NBbXFyTFlpbHlEMGsvaTdkdXplK25TdnFJYmZKT0UrNGpMa2lBSzZwdFJoT2RQQ3ZyTnR1cElvTFVGWHo1d3ZRTm9pcDRKRVJjMlZLdlp4Ry9zQzdraFZKaE8ySklGNGRoeVdla09aaHBTQ1E4Z2JVQVVWaHNFSW43R3JZOXF2SlZwRHZLb0xqSFlyQ2JKZWM4QXF4aW5wMmRydzgwckNldFMzdTZwWVZGRkJIWFNFQ1U3U1krTjRrYThTMnpocnhJYjFtV3pleFdUdFNnZ21kSFhhNFpIMFlQaXF3T05wWCtWWHMzNlJ4dzFzTkQ2NjVBK0xoMHZQR094MmVpck1pY3g4d0NwSUJTVHJXSER1WXJVaS9VU1JkS3c2ajZiYjRMVitiMUttZjhMQW1KS0owdXZXR3VaQ0FDUXZ1YzVIK1FsM1FjOTNDNzJWcWEyQXQrS0hUSFlaL1Q0QzBHUlVEVlJEM2M5dWNlbmdzS2M9CiAgLSBuYW1lOiBvcHN1c2VyMDMKICAgIHN1ZG86IEZhbHNlCiAgICBsb2NrX3Bhc3N3ZDogVHJ1ZQogICAgc3NoLWF1dGhvcml6ZWQta2V5czoKICAgICAgLSBzc2gtcnNhIEFBQUFCM056YUMxeWMyRUFBQUFEQVFBQkFBQUJnUUNaTjVaNVNMTXJkUHBZZzZZZmNlNk5LbnkxKzAyWFM5ZG40QVZGak02czdwMG5henNVMjk3KzFvZng0R0ZQY1cwYU9OaHN3cVNYMG1pNEwxVUFWZlhFdVNuWlpiQ3daZnZqbHVJd1RWSzdXNEl1bStmZzYweXJoeVFVN3RLT1FZbTJKTXhsN2hJaWloNitJU0djc0FtcXJMWWlseUQway9pN2R1emUrblN2cUliZkpPRSs0akxraUFLNnB0UmhPZFBDdnJOdHVwSW9MVUZYejV3dlFOb2lwNEpFUmMyVkt2WnhHL3NDN2toVkpoTzJKSUY0ZGh5V2VrT1pocFNDUThnYlVBVVZoc0VJbjdHclk5cXZKVnBEdktvTGpIWXJDYkplYzhBcXhpbnAyZHJ3ODByQ2V0UzN1NnBZVkZGQkhYU0VDVTdTWStONGthOFMyemhyeEliMW1XemV4V1R0U2dnbWRIWGE0WkgwWVBpcXdPTnBYK1ZYczM2Unh3MXNORDY2NUErTGgwdlBHT3gyZWlyTWljeDh3Q3BJQlNUcldIRHVZclVpL1VTUmRLdzZqNmJiNExWK2IxS21mOExBbUpLSjB1dldHdVpDQUNRdnVjNUgrUWwzUWM5M0M3MlZxYTJBdCtLSFRIWVovVDRDMEdSVURWUkQzYzl1Y2VuZ3NLYz0="
         }
     },
     "variables": {
@@ -164,7 +161,7 @@
                 "additionalCapabilities": {
                     "ultraSSDEnabled": false
                 },
-                "overprovision": true,
+                "overprovision": false,
                 "singlePlacementGroup": true,
                 "upgradePolicy": {
                     "mode": "Automatic"
@@ -185,11 +182,12 @@
                                 "publicKeys": [
                                     {
                                         "path": "/home/azuresu/.ssh/authorized_keys",
-                                        "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAo45IddGf99tLXFxyYVWmHhh/J7EhuT1Rh0/Z9G70pmfF8/FeeHNgUeIQOEewiGOF9EiPdt66LtcW8KPmxmyMrKjAsEG5KJIHwyZ72FtFOQCqpDfDTOj/nVI3QgR7k/InQstA2C4nqfgUKlVLqpZHGpcy0AZuHS6eMIzQ9jfhYwbOan/re8KNtOwa63Egsrkf00EBQGmmkGLvzsMgCzPjP4oguWkBb7tcXfoLhph096GwaDx8dgpjUeB6ewnl0qukEGGRfWf5Qdz7RnlHbIC5gdplLyjb/78lDJaDejqFRvZ23ZeJE89AvybByDSvHzHDgiwQT0T8OsUOlcb0sp1QyQ== rsa-key-20201230"
+                                        "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAo45IddGf99tLXFxyYVWmHhh/J7EhuT1Rh0/Z9G70pmfF8/FeeHNgUeIQOEewiGOF9EiPdt66LtcW8KPmxmyMrKjAsEG5KJIHwyZ72FtFOQCqpDfDTOj/nVI3QgR7k/InQstA2C4nqfgUKlVLqpZHGpcy0AZuHS6eMIzQ9jfhYwbOan/re8KNtOwa63Egsrkf00EBQGmmkGLvzsMgCzPjP4oguWkBb7tcXfoLhph096GwaDx8dgpjUeB6ewnl0qukEGGRfWf5Qdz7RnlHbIC5gdplLyjb/78lDJaDejqFRvZ23ZeJE89AvybByDSvHzHDgiwQT0T8OsUOlcb0sp1QyQ== UNUSED"
                                     }
                                 ]
                             }
                         },
+                        "customData": "[parameters('jumpBoxCloudInitAsBase64')]",
                         "adminUsername": "azuresu"
                     },
                     "extensionProfile": {
@@ -1451,7 +1449,6 @@
                     "upgradeChannel": "none"
                 },*/
                 "apiServerAccessProfile": {
-                    /*"authorizedIPRanges": "[parameters('clusterAuthorizedIPRanges')]",*/
                     "enablePrivateCluster": true,
                     "privateDNSZone": "[resourceId(variables('vNetResourceGroup'), 'Microsoft.Network/privateDnsZones', concat('privatelink.', parameters('location') ,'.azmk8s.io'))]"
                 },

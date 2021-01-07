@@ -1267,7 +1267,9 @@
             "dependsOn": [
                 "[resourceId('Microsoft.OperationsManagement/solutions', variables('containerInsightsSolutionName'))]",
                 "[resourceId(variables('vNetResourceGroup'), 'Microsoft.Resources/deployments', 'EnsureClusterIdentityHasRbacToSelfManagedResources')]",
-                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('clusterControlPlaneIdentityName'))]"
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('clusterControlPlaneIdentityName'))]",
+                "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'vmss-jumpboxes')]" // This doesn't technically depend on this, but does give more time to allow for role assignments to propigate. Also good to have the jump boxes avaliable immediately when the cluster shows up.
+
                 /*"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities/providers/roleAssignments', 'podmi-ingress-controller', 'Microsoft.Authorization', guid(resourceGroup().id, variables('managedIdentityOperatorRole')))]",
                 "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'podmi-ingress-controller')]"*/
             ],

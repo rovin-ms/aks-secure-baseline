@@ -4,6 +4,9 @@ TODO:
 
 * Figure out how to deal with the role assignment race condition.  The cluster managed identity might need to be its own deployment to give time for permissions to propagate ...
 * Add image name parameters properly
+* Consider moving Azure Bastion out of the hub and into the landing zone (IP & Subnet in spoke, Service in landing zone -- update NSGs as needed).
+* Apply More Policies akin to the "no public AKS clusters".
+
 
 Now that the [hub-spoke network is provisioned](./04-networking.md), the next step in the [AKS secure Baseline reference implementation](./) is deploying the AKS cluster and its adjacent Azure resources.
 

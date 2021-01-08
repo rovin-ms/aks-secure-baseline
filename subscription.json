@@ -36,6 +36,8 @@
         "policyDefinitionName-EnableAksDefender": "[guid(subscription().id, 'EnableDefenderForAks')]",
         "policyDefinitionName-EnableAcrDefender": "[guid(subscription().id, 'EnableDefenderForAcr')]",
         "policyDefinitionName-EnableAkvDefender": "[guid(subscription().id, 'EnableDefenderForAkv')]",
+        "policyDefinitionName-DenyPublicAks": "[guid(subscription().id, 'DenyPublicAks')]",
+        "policyDefinitionName-DenyAagWithoutWaf": "[guid(subscription().id, 'DenyAagWithoutWaf')]",
         "policySetDefinitionName-EnableDefender": "[guid(subscription().id, 'EnableDefender')]",
         "roleId-SecurityAdmin": "/providers/Microsoft.Authorization/roleDefinitions/fb1c8493-542b-48eb-b624-b4c8fea62acd",
         "deploymentResourceRegion": "centralus" // This region is used as the default for all generic resource groups and for any additional deployment resources. No resources are actually deployed to this resource group.
@@ -112,7 +114,7 @@
                                                 "type": "Microsoft.Security/pricings",
                                                 "apiVersion": "2018-06-01",
                                                 "name": "KubernetesService",
-                                                "properties":{
+                                                "properties": {
                                                     "pricingTier": "Standard"
                                                 }
                                             }
@@ -175,7 +177,7 @@
                                                 "type": "Microsoft.Security/pricings",
                                                 "apiVersion": "2018-06-01",
                                                 "name": "ContainerRegistry",
-                                                "properties":{
+                                                "properties": {
                                                     "pricingTier": "Standard"
                                                 }
                                             }
@@ -238,7 +240,7 @@
                                                 "name": "KeyVaults",
                                                 "type": "Microsoft.Security/pricings",
                                                 "apiVersion": "2018-06-01",
-                                                "properties":{
+                                                "properties": {
                                                     "pricingTier": "Standard"
                                                 }
                                             }
@@ -272,13 +274,75 @@
                     {
                         "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-EnableAksDefender'))]"
                     },
-                                        {
+                    {
                         "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-EnableAcrDefender'))]"
                     },
                     {
                         "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-EnableAkvDefender'))]"
                     }
                 ]
+            }
+        },
+        {
+            "name": "[variables('policyDefinitionName-DenyPublicAks')]",
+            "type": "Microsoft.Authorization/policyDefinitions",
+            "apiVersion": "2019-09-01",
+            "properties": {
+                "description": "This policy denies the creation of Azure Kubernetes Service non-private clusters",
+                "displayName": "Public network access on AKS API should be disabled",
+                "policyType": "Custom",
+                "mode": "All",
+                "metadata": {
+                    "version": "1.0.0"
+                },
+                "policyRule": {
+                    "if": {
+                        "allOf": [
+                            {
+                                "field": "type",
+                                "equals": "Microsoft.ContainerService/managedClusters"
+                            },
+                            {
+                                "field": "Microsoft.ContainerService/managedClusters/apiServerAccessProfile.enablePrivateCluster",
+                                "notequals": "true"
+                            }
+                        ]
+                    },
+                    "then": {
+                        "effect": "Deny"
+                    }
+                }
+            }
+        },
+        {
+            "name": "[variables('policyDefinitionName-DenyAagWithoutWaf')]",
+            "type": "Microsoft.Authorization/policyDefinitions",
+            "apiVersion": "2019-09-01",
+            "properties": {
+                "description": "This policy denies the creation of Azure Application Gateway without WAF feature",
+                "displayName": "WAF SKU must be enabled on Azure Application Gateway",
+                "policyType": "Custom",
+                "mode": "All",
+                "metadata": {
+                    "version": "1.0.0"
+                },
+                "policyRule": {
+                    "if": {
+                        "allOf": [
+                            {
+                                "field": "type",
+                                "equals": "Microsoft.Network/applicationGateways"
+                            },
+                            {
+                                "field": "Microsoft.Network/applicationGateways/sku.name",
+                                "notequals": "WAF_v2"
+                            }
+                        ]
+                    },
+                    "then": {
+                        "effect": "Deny"
+                    }
+                }
             }
         },
         {
@@ -375,13 +439,14 @@
                 }
             }
         },
-{
+        {
             "name": "[concat('Apply-', variables('rgName-bu0001A0005'), '-Policies')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-06-01",
             "resourceGroup": "[variables('rgName-bu0001A0005')]",
             "dependsOn": [
-                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-bu0001A0005'))]"
+                "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-bu0001A0005'))]",
+                "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-DenyPublicAks'))]"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -402,7 +467,7 @@
                                 "policyDefinitionId": "[variables('policyDefinitionId-AllowedResources')]",
                                 "parameters": {
                                     "listOfResourceTypesAllowed": {
-                                        "value": [                                            
+                                        "value": [
                                             "Microsoft.Compute/images",
                                             "Microsoft.Compute/virtualMachineScaleSets",
                                             "Microsoft.ContainerRegistry/registries",
@@ -426,6 +491,32 @@
                                         ]
                                     }
                                 }
+                            }
+                        },
+                        {
+                            "name": "[guid(variables('policyDefinitionName-DenyPublicAks'), variables('rgName-bu0001A0005'))]",
+                            "type": "Microsoft.Authorization/policyAssignments",
+                            "apiVersion": "2020-03-01",
+                            "comments": "Deny public AKS clusters policy applied to the appliction resource group.",
+                            "properties": {
+                                "displayName": "[concat('[', variables('rgName-bu0001A0005'), '] ', reference(subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-DenyPublicAks')), '2020-09-01').displayName)]",
+                                "description": "Only support private AKS clusters, deny any other.",
+                                "scope": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-bu0001A0005'))]",
+                                "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-DenyPublicAks'))]",
+                                "parameters": {}
+                            }
+                        },
+                        {
+                            "name": "[guid(variables('policyDefinitionName-DenyAagWithoutWaf'), variables('rgName-bu0001A0005'))]",
+                            "type": "Microsoft.Authorization/policyAssignments",
+                            "apiVersion": "2020-03-01",
+                            "comments": "Deny public AKS clusters policy applied to the appliction resource group.",
+                            "properties": {
+                                "displayName": "[concat('[', variables('rgName-bu0001A0005'), '] ', reference(subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-DenyAagWithoutWaf')), '2020-09-01').displayName)]",
+                                "description": "Only allow Azure Application Gateway SKU with WAF support.",
+                                "scope": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName-bu0001A0005'))]",
+                                "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', variables('policyDefinitionName-DenyAagWithoutWaf'))]",
+                                "parameters": {}
                             }
                         }
                     ]
@@ -464,7 +555,7 @@
             "type": "Microsoft.Security/pricings",
             "apiVersion": "2018-06-01",
             "comments": "Enable Azure Defender Standard for Key Vault. Requires Owner or Security Admin role.",
-            "properties":{
+            "properties": {
                 "pricingTier": "Standard"
             }
         },
@@ -474,7 +565,7 @@
             "type": "Microsoft.Security/pricings",
             "apiVersion": "2018-06-01",
             "comments": "Enable Azure Defender Standard for Container Registry. Requires Owner or Security Admin role.",
-            "properties":{
+            "properties": {
                 "pricingTier": "Standard"
             }
         },
@@ -484,7 +575,7 @@
             "type": "Microsoft.Security/pricings",
             "apiVersion": "2018-06-01",
             "comments": "Enable Azure Defender Standard for Kubernetes Service. Requires Owner or Security Admin role.",
-            "properties":{
+            "properties": {
                 "pricingTier": "Standard"
             }
         }

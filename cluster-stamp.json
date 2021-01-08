@@ -124,7 +124,7 @@
         "vnetIngressServicesSubnetResourceId": "[concat(parameters('targetVnetResourceId'), '/subnets/snet-cluster-ingressservices')]",
         "vnetManagementOpsSubnetResourceId": "[concat(parameters('targetVnetResourceId'), '/subnets/snet-management-ops')]",
 
-        "agwName": "[concat('apw-', variables('clusterName')) ]",
+        "agwName": "[concat('apw-', variables('clusterName'))]",
         "apwResourceId": "[resourceId('Microsoft.Network/applicationGateways', variables('agwName'))]",
 
         "clusterControlPlaneIdentityName": "[concat('mi-', variables('clusterName'), '-controlplane')]",
@@ -1265,6 +1265,12 @@
             "dependsOn": [
                 "[resourceId('Microsoft.OperationsManagement/solutions', variables('containerInsightsSolutionName'))]",
                 "[resourceId(variables('vNetResourceGroup'), 'Microsoft.Resources/deployments', 'EnsureClusterIdentityHasRbacToSelfManagedResources')]",
+                "[resourceId('Microsoft.Authorization/policyAssignments', guid('1a5b4dca-0b6f-4cf5-907c-56316bc1bf3d', resourceGroup().name, variables('clusterName')))]",
+                "[resourceId('Microsoft.Authorization/policyAssignments', guid('3fc4dc25-5baf-40d8-9b05-7fe74c1bc64e', resourceGroup().name, variables('clusterName')))]",
+                "[resourceId('Microsoft.Authorization/policyAssignments', guid('42b8ef37-b724-4e24-bbc8-7a7708edfe00', resourceGroup().name, variables('clusterName')))]",
+                "[resourceId('Microsoft.Authorization/policyAssignments', guid('df49d893-a74c-421d-bc95-c663042e5b80', resourceGroup().name, variables('clusterName')))]",
+                "[resourceId('Microsoft.Authorization/policyAssignments', guid('e345eecc-fa47-480f-9e88-67dcc122b164', resourceGroup().name, variables('clusterName')))]",
+                "[resourceId('Microsoft.Authorization/policyAssignments', guid('febd0533-8e55-448f-b837-bd0e06f16469', resourceGroup().name, variables('clusterName')))]",
                 "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('clusterControlPlaneIdentityName'))]",
                 "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'vmss-jumpboxes')]" // This doesn't technically depend on this, but does give more time to allow for role assignments to propigate. Also good to have the jump boxes avaliable immediately when the cluster shows up.
 
@@ -2156,7 +2162,7 @@
             "name": "[guid('1a5b4dca-0b6f-4cf5-907c-56316bc1bf3d', resourceGroup().name, variables('clusterName'))]",
             "type": "Microsoft.Authorization/policyAssignments",
             "apiVersion": "2020-03-01",
-            "comments": "Applying the '???' Policy to the resource group.",
+            "comments": "Applying the '????' Policy at the resource group level.",
             "properties": {
                 "displayName": "[concat('[', variables('clusterName'),'] ', reference('/providers/Microsoft.Authorization/policyDefinitions/1a5b4dca-0b6f-4cf5-907c-56316bc1bf3d', '2020-09-01').displayName)]",
                 "scope": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', resourceGroup().name)]",

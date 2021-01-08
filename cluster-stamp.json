@@ -1,6 +1,6 @@
 {
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-    "contentVersion": "0.0.0.4",
+    "contentVersion": "0.0.0.5",
     "parameters": {
         "targetVnetResourceId": {
             "type": "string",
@@ -8,16 +8,16 @@
                 "description": "The regional network spoke VNet Resource ID that the cluster will be joined to"
             }
         },
-        "k8sRbacAadProfileAdminGroupObjectID": {
+        "clusterAdminAadGroupObjectId": {
             "type": "string",
             "metadata": {
-                "description": "Group that has admin access to this cluster"
+                "description": "Azure AD Group in the identified tenant that will be granted the highly prividledged cluster-admin role."
             }
         },
-        "k8sRbacAadProfileTenantId": {
+        "k8sControlPlaneAuthorizationTenantId": {
             "type": "string",
             "metadata": {
-                "description": "This is tenant your AKS cluster will used for Cluster API identity validation"
+                "description": "Your AKS control plane Cluster API authentication tenant"
             }
         },
         "appGatewayListenerCertificate": {
@@ -53,7 +53,7 @@
                 "southeastasia"
             ],
             "metadata": {
-                "description": "AKS Service, Node Pool, and supporting services (KeyVault, App Gateway, etc) region.  The network team maintains this approved regional list which is a subset of zones with Availability Zone support."
+                "description": "AKS Service, Node Pools, and supporting services (KeyVault, App Gateway, etc) region. This needs to be the same region as the vnet provided in these parameters."
             }
         },
         "geoRedundancyLocation": {
@@ -83,7 +83,7 @@
                 "southeastasia"
             ],
             "metadata": {
-                "description": "For Azure resources that support native geo-redunancy, provide the location the redundant service will have its secondary. Should be different than the location parameter and ideally should be a paired region - https://docs.microsoft.com/en-us/azure/best-practices-availability-paired-regions. This region does not need to support availability zones."
+                "description": "For Azure resources that support native geo-redunancy, provide the location the redundant service will have its secondary. Should be different than the location parameter and ideally should be a paired region - https://docs.microsoft.com/azure/best-practices-availability-paired-regions. This region does not need to support availability zones."
             }
         },
         "kubernetesVersion": {
@@ -1428,9 +1428,9 @@
                     "managed": true,
                     "enableAzureRBAC": false,
                     "adminGroupObjectIDs": [
-                        "[parameters('k8sRbacAadProfileAdminGroupObjectID')]"
+                        "[parameters('clusterAdminAadGroupObjectId')]"
                     ],
-                    "tenantID": "[parameters('k8sRbacAadProfileTenantId')]"
+                    "tenantID": "[parameters('k8sControlPlaneAuthorizationTenantId')]"
                 },
                 "autoScalerProfile": {
                     "balance-similar-node-groups": "false",

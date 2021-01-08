@@ -14,11 +14,11 @@ The following three resource groups will be created in the steps below.
 
 | Name                            | Purpose                                   |
 |---------------------------------|-------------------------------------------|
-| rg-enterprise-networking-hubs   | Contains all of your organization's regional hubs. Hubs include an egress firewall, Azure Bastion, and Log Analytics for network related logging. |
+| rg-enterprise-networking-hubs   | Contains all of your organization's regional hubs. A regional hubs include an egress firewall, Azure Bastion, and Log Analytics for network logging. |
 | rg-enterprise-networking-spokes | Contains all of your organization's regional spokes and related networking resources. All spokes will peer with their regional hub and subnets will egress through the regional firewall in the hub. |
 | rg-bu0001a0005                  | Contains the regulated cluster resources. |
 
-Both Azure Kubernetes Service and Azure Image Builder Service use a concept of a dynamically-created infrastructure resource group. So in addition to the three resource groups mentioned above, as follow these instructions, you'll end up with five, two of which are automatically created and their lifecycle tied to their owning service. You will not see these two infrastructure resource groups show until later in the walk through.
+Both Azure Kubernetes Service and Azure Image Builder Service use a concept of a dynamically-created _infrastructure_ resource group. So in addition to the three resource groups mentioned above, as follow these instructions, you'll end up with five, two of which are automatically created and their lifecycle tied to their owning service. You will not see these two infrastructure resource groups get created until later in the walk through when their owning service is created.
 
 ### Azure Policy applied
 

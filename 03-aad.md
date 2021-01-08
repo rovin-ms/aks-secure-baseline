@@ -6,15 +6,15 @@ In the prior step, you [ensured you met all prerequisites](./01-prerequisites.md
 
 We are giving this cluster a generic identifier that we'll use to build relationships between various resources. We'll assume that Business Unit 0001 is building a regulated workload identified internally as App ID 0005 in their service tree.  To that end, you may see references to `bu0001a0005` throughout the rest of this implementation. Naming conventions are an important organization technique for your resources; for your final implementation, please use what is appropriate for your team/organization.
 
-## Consider this
+## Azure AD tenant selection
 
 AKS provides a separation between Azure management control plane access control and Kubernetes control plane access control. This deployment process, creating and associating Azure resources with each other, is an example of Azure management control plane access. This is a relationship between your Azure AD tenant associated with your Azure subscription and is what grants you the permissions to create networks, clusters, managed identities, and create relationships between them. Kubernetes has it's own control plane, exposed via the Cluster API endpoint, and honors the Kubernetes RBAC authorization model. This endpoint is where `kubectl` commands are executed against, for example.
 
-AKS allows for disparate tenants between these two control planes; one tenant can be used for Azure management control plane and another for Cluster API authorization. You can also use the same tenant for both. Regulated environments often have clear tenant separation to address impact radius and potential lateral movement; at the added complexity of managing multiple identity stores. This reference implementation will work with either model. If you're using a single tenant while going through this, you may be able to skip some steps (they'll be identified as such). Ensure your final implementation is aligned with how your organization and complice requirements dictate identity management, and adjust this reference implementation as needed to align.
+AKS allows for disparate tenants between these two control planes; one tenant can be used for Azure management control plane and another for Cluster API authorization. You can also use the same tenant for both. Regulated environments often have clear tenant separation to address impact radius and potential lateral movement; at the added complexity of managing multiple identity stores. This reference implementation will work with either model. If you're using a single tenant while going through this, you may be able to skip some steps (they'll be identified as such). Ensure your final implementation is aligned with how your organization and complice requirements dictate identity management.
 
-## Expected Results
+## Expected results
 
-Following the steps below you will result in an Azure AD configuration that will be used for Kubernetes Data Plane (Cluster API) authorization.
+Following the steps below you will result in an Azure AD configuration that will be used for Kubernetes control plane (Cluster API) authorization.
 
 | Object                         | Purpose                                                 |
 |--------------------------------|---------------------------------------------------------|
@@ -37,7 +37,7 @@ Following the steps below you will result in an Azure AD configuration that will
    az login -t <Replace-With-ClusterApi-AzureAD-TenantId> --allow-no-subscriptions
    ```
 
-1. Capture the Azure AD Tenant ID that will be associated with your cluster's Kubernetes RBAC for data plane access.
+1. Capture the Azure AD Tenant ID that will be associated with your cluster's Kubernetes RBAC for Cluster API access.
 
    ```bash
    export TENANTID_K8SRBAC=$(az account show --query tenantId --output tsv)
@@ -54,7 +54,7 @@ Following the steps below you will result in an Azure AD configuration that will
    export AADOBJECTID_GROUP_CLUSTERADMIN=$(az ad group create --display-name $AADOBJECTNAME_GROUP_CLUSTERADMIN --mail-nickname $AADOBJECTNAME_GROUP_CLUSTERADMIN --description "Principals in this group are cluster admins in the bu001a000500 cluster." --query objectId -o tsv)
    ```
 
-1. Create a "break-glass" Cluster Admin user for your AKS cluster.
+1. Create a "break-glass" cluster administrator user for your AKS cluster.
 
    This steps creates a dedicated account that you can use for cluster administrative access. This account should have no standing permissions on any Azure resources; a compromise of this account then cannot directly be parlayed into Azure management control plane access. If using the same tenant that your Azure resources are managed with, some organizations employ an alt-account strategy. In that case, your cluster admins' alt account(s) might satisfy this step.
 
@@ -64,7 +64,7 @@ Following the steps below you will result in an Azure AD configuration that will
    export AADOBJECTID_USER_CLUSTERADMIN=$(az ad user create --display-name=${AADOBJECTNAME_USER_CLUSTERADMIN} --user-principal-name ${AADOBJECTNAME_USER_CLUSTERADMIN}@${TENANTDOMAIN_K8SRBAC} --force-change-password-next-login --password ChangeMebu0001a0005AdminChangeMe --query objectId -o tsv)
    ```
 
-1. Add the new admin user to the new admin security group.
+1. Add the new cluster admin user to the new cluster admin security group.
 
    ```bash
    az ad group member add -g $AADOBJECTID_GROUP_CLUSTERADMIN --member-id $AADOBJECTID_USER_CLUSTERADMIN

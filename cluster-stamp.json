@@ -273,15 +273,16 @@
             "properties": {
                 "accessPolicies": [
                     {
-                        "tenantId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities','mi-appgateway-frontend')).tenantId]",
-                        "objectId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities','mi-appgateway-frontend')).principalId]",
+                        "tenantId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'mi-appgateway-frontend')).tenantId]",
+                        "objectId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'mi-appgateway-frontend')).principalId]",
                         "permissions": {
                             "secrets": [
                                 "get"
                             ],
                             "certificates": [
                                 "get"
-                            ]
+                            ],
+                            "keys": []
                         }
                     }/*,
                     {
@@ -301,7 +302,17 @@
                     "family": "A",
                     "name": "standard"
                 },
-                "tenantId": "[subscription().tenantId]"
+                "tenantId": "[subscription().tenantId]",
+                "networkAcls": {
+                    "bypass": "None",
+                    "defaultAction": "Deny",
+                    "ipRules": [],
+                    "virtualNetworkRules": []
+                },
+                "enabledForDeployment": false,
+                "enabledForDiskEncryption": false,
+                "enabledForTemplateDeployment": false,
+                "enableSoftDelete": true
             },
             "resources": [
                 {
@@ -1172,7 +1183,7 @@
         },*/
         {
             "type": "Microsoft.ContainerRegistry/registries",
-            "apiVersion": "2019-05-01",
+            "apiVersion": "2020-11-01-preview",
             "name": "[variables('defaultAcrName')]",
             "location": "[parameters('location')]",
             "sku": {
@@ -1182,10 +1193,8 @@
                 "adminUserEnabled": false,
                 "networkRuleSet": {
                     "defaultAction": "Deny",
-                    "virtualNetworkRules": [
-                    ],
-                    "ipRules": [
-                    ]
+                    "virtualNetworkRules": [],
+                    "ipRules": []
                 },
                 "policies": {
                     "quarantinePolicy": {
@@ -1193,13 +1202,20 @@
                     },
                     "trustPolicy": {
                         "type": "Notary",
-                        "status": "disabled"
+                        "status": "enabled"
                     },
                     "retentionPolicy": {
                         "days": 15,
                         "status": "enabled"
                     }
-                }
+                },
+                "publicNetworkAccess": "Disabled",
+                "encryption": {
+                    "status": "disabled"
+                },
+                "dataEndpointEnabled": true,
+                "networkRuleBypassOptions": "AzureServices",
+                "zoneRedundancy": "Disabled" // This Preview feature only supports three regions at this time, and eastus2's paired region (centralus), does not support this. So disabling for now.
             },
             "resources": [
                 {

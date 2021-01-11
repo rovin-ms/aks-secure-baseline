@@ -4,6 +4,35 @@ Now that [the AKS cluster](./05-aks-cluster.md) has been deployed, the next step
 
 ## Steps
 
+1. Import Flux images into your container registry.
+
+   Any workloads, including system-ops workloads, need be brought into a container registry that you control. Flux is going to be a GitOps operator, and as such we are going to next pull in the flux components into our container registry.
+
+   ```bash
+   # Get your Azure Container Registry service name
+   export ACR_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.containerRegistryName.value -o tsv)
+   
+   # [Combined this takes about one minute.]
+   az acr import --source ghcr.io/fluxcd/kustomize-controller:v0.5.3 -n $ACR_NAME
+   az acr import --source ghcr.io/fluxcd/source-controller:v0.5.6 -n $ACR_NAME
+   ```
+
+1. Update cluster services to use your container registry.
+
+   1. Update the two `image:` values in `flux-system/flux-components.yaml` to your container registry instead of the default public container registry. See comment in file for details.
+
+      ```bash
+      sed -i -e "s|image: ghcr\.io/fluxcd/source-controller:v0.5.6|image: ${ACR_NAME}\.privatelink\.azurecr\.io/fluxcd/source-controller:v0\.5\.6|" -e "s|image: ghcr\.io/fluxcd/kustomize-controller:v0.5.3|image: ${ACR_NAME}\.privatelink\.azurecr\.io/fluxcd/kustomize-controller:v0\.5\.3|" k8s-resources/flux-system/flux-components.yaml
+      ```
+
+
+   If you used your own fork of this GitHub repo, update the [`flux.yaml`](./cluster-baseline-settings/flux.yaml) file to include reference to your own repo and change the URL below to point to yours as well. Also, since Flux will begin processing the manifests in [`cluster-baseline-settings/`](./cluster-baseline-settings/) now would be a good time to:
+   >
+   > * update the `<replace-with-an-aad-group-object-id-for-this-cluster-role-binding>` placeholder in [`user-facing-cluster-role-aad-group.yaml`](./cluster-baseline-settings/user-facing-cluster-role-aad-group.yaml) with the Object IDs for the Azure AD group(s) you created for management purposes. If you don't, the manifest will still apply, but AAD integration will not be mapped to your specific AAD configuration.
+   > * Update three `image` manifest references to your container registry instead of the default public container registry. See comment in each file for instructions.
+   >   * update the two `image:` values in [`flux.yaml`](./cluster-baseline-settings/flux.yaml).
+   >   * update the one `image:` values in [`kured-1.4.0-dockerhub.yaml`](./cluster-baseline-settings/kured-1.4.0-dockerhub.yaml).
+
 GitOps allows a team to author Kubernetes manifest files, persist them in their git repo, and have them automatically apply to their cluster as changes occur.  This reference implementation is focused on the baseline cluster, so Flux is managing cluster-level concerns. This is distinct from workload-level concerns, which would be possible as well to manage via Flux, and would typically be done by additional Flux operators in the cluster. The namespace `cluster-baseline-settings` will be used to provide a logical division of the cluster configuration from workload configuration.  Examples of manifests that are applied:
 
 * Cluster Role Bindings for the AKS-managed Azure AD integration
@@ -62,6 +91,7 @@ GitOps allows a team to author Kubernetes manifest files, persist them in their 
    export ACR_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.containerRegistryName.value -o tsv)
 
    # Import cluster management images hosted in public container registries
+   
    az acr import --source docker.io/library/memcached:1.5.20 -n $ACR_NAME
    az acr import --source docker.io/fluxcd/flux:1.19.0 -n $ACR_NAME
    az acr import --source docker.io/weaveworks/kured:1.4.0 -n $ACR_NAME

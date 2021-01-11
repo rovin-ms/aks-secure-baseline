@@ -1176,6 +1176,12 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        # PRODUCTION READINESS CHANGE REQUIRED
+        # This image should be sourced from a non-public container registry, such as the
+        # one deployed along side of this reference implementation.
+        # az acr import --source ghcr.io/fluxcd/kustomize-controller:v0.5.3 -n <your-acr-instance-name>
+        # and then set this to
+        # image: <your-acr-instance-name>.privatelink.azurecr.io/fluxcd/kustomize-controller:v0.5.3
         image: ghcr.io/fluxcd/kustomize-controller:v0.5.3
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -1252,6 +1258,12 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        # PRODUCTION READINESS CHANGE REQUIRED
+        # This image should be sourced from a non-public container registry, such as the
+        # one deployed along side of this reference implementation.
+        # az acr import --source ghcr.io/fluxcd/source-controller:v0.5.6 -n <your-acr-instance-name>
+        # and then set this to
+        # image: <your-acr-instance-name>.privatelink.azurecr.io/fluxcd/source-controller:v0.5.6
         image: ghcr.io/fluxcd/source-controller:v0.5.6
         imagePullPolicy: IfNotPresent
         livenessProbe:

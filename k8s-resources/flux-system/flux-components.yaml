@@ -1228,7 +1228,8 @@ spec:
             - matchExpressions:
               - key: kubernetes.azure.com/mode
                 operator: NotIn
-                values: system
+                values:
+                - system
       securityContext:
         fsGroup: 1337
       terminationGracePeriodSeconds: 60
@@ -1325,7 +1326,8 @@ spec:
             - matchExpressions:
               - key: kubernetes.azure.com/mode
                 operator: NotIn
-                values: system
+                values:
+                - system
       terminationGracePeriodSeconds: 10
       volumes:
       - emptyDir: {}

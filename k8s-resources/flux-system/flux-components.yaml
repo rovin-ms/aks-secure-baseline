@@ -1181,7 +1181,7 @@ spec:
         # one deployed along side of this reference implementation.
         # az acr import --source ghcr.io/fluxcd/kustomize-controller:v0.5.3 -n <your-acr-instance-name>
         # and then set this to
-        # image: <your-acr-instance-name>.privatelink.azurecr.io/fluxcd/kustomize-controller:v0.5.3
+        # image: <your-acr-instance-name>.azurecr.io/fluxcd/kustomize-controller:v0.5.3
         image: ghcr.io/fluxcd/kustomize-controller:v0.5.3
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -1215,6 +1215,12 @@ spec:
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
+        agentpool: npooscope01
+      tolerations:
+      - key: pci-scope
+        operator: Equal
+        value: out-of-scope
+        effect: NoExecute
       securityContext:
         fsGroup: 1337
       terminationGracePeriodSeconds: 60
@@ -1263,7 +1269,7 @@ spec:
         # one deployed along side of this reference implementation.
         # az acr import --source ghcr.io/fluxcd/source-controller:v0.5.6 -n <your-acr-instance-name>
         # and then set this to
-        # image: <your-acr-instance-name>.privatelink.azurecr.io/fluxcd/source-controller:v0.5.6
+        # image: <your-acr-instance-name>.azurecr.io/fluxcd/source-controller:v0.5.6
         image: ghcr.io/fluxcd/source-controller:v0.5.6
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -1298,6 +1304,12 @@ spec:
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
+        agentpool: npooscope01
+      tolerations:
+      - key: pci-scope
+        operator: Equal
+        value: out-of-scope
+        effect: NoExecute
       terminationGracePeriodSeconds: 10
       volumes:
       - emptyDir: {}

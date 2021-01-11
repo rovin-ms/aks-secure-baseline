@@ -2,11 +2,25 @@
 
 Now that [the AKS cluster](./05-aks-cluster.md) has been deployed, the next step to configure a GitOps management solution on our cluster, Flux in this case.
 
+## Expected results
+
+### Jump box access is validated
+
+While the following process likely would be handled via your deployment pipelines, we are going to use this opportunity to demonstrate cluster management access via Azure Bastion, and show that your cluster cannot be directly accessed locally.
+
+### Flux is configured and deployed
+
+#### Azure Container Registry
+
+Your Azure Container Registry is available to serve more than just your workload. It can also be used to serve any cluster-wide operations tooling you wish installed on your cluster. Your GitOps operator, Flux, is one such tooling. As such, we'll have two container images imported into your private container registry that are required for the functioning of Flux. Likewise, you'll update the related yaml files to point to your specific private container registry.
+
+#### Your Github Repo
+
+Your github repo will be the source of truth for your cluster's configuration. Typically this would be a private repo, but for ease of demonstration, it'll be connected to a public repo (all firewall permissions are set to allow this specific interaction.) You'll be updating a configuration resource for Flux so that it knows to point to your own repo.
+
 ## Steps
 
 1. Import Flux images into your container registry.
-
-   Any workloads, including system-ops workloads, need be brought into a container registry that you control. Flux is going to be a GitOps operator, and as such we are going to next pull in the flux components into our container registry.
 
    ```bash
    # Get your Azure Container Registry service name
@@ -17,13 +31,84 @@ Now that [the AKS cluster](./05-aks-cluster.md) has been deployed, the next step
    az acr import --source ghcr.io/fluxcd/source-controller:v0.5.6 -n $ACR_NAME
    ```
 
-1. Update cluster services to use your container registry.
+1. Update flux to use images from your container registry.
 
-   1. Update the two `image:` values in `flux-system/flux-components.yaml` to your container registry instead of the default public container registry. See comment in file for details.
+   Update the two `image:` values in `k8s-resources/flux-system/flux-components.yaml` to your container registry instead of the default public container registry. See comment in file for details.
 
-      ```bash
-      sed -i -e "s|image: ghcr\.io/fluxcd/source-controller:v0.5.6|image: ${ACR_NAME}\.azurecr\.io/fluxcd/source-controller:v0\.5\.6|" -e "s|image: ghcr\.io/fluxcd/kustomize-controller:v0\.5\.3|image: ${ACR_NAME}\.azurecr\.io/fluxcd/kustomize-controller:v0\.5\.3|" k8s-resources/flux-system/flux-components.yaml
-      ```
+   ```bash
+   sed -i "s/image: ghcr\.io/image: ${ACR_NAME}\.azurecr\.io/g" k8s-resources/flux-system/flux-components.yaml
+
+   git commit -m "Update Flux to use images from my ACR instead of public container registries." .
+   ```
+
+1. Update flux to pull from your repo instead of the mspnp repo.
+
+   ```bash
+   sed -i -e 's|github.com/mspnp|github.com/<YOUR_GITHUB_ORG>|' k8s-resources/flux-system/flux-sync.yaml
+
+   git commit -m "Update Flux to pull from my fork instead of the upstream Microsoft repo." .
+   ```
+
+1. Push those two changes to your repo.
+
+   ```bash
+   git push
+   ```
+
+1. Connect to a jump box node via Azure Bastion.
+
+1. From your Azure Bastion connection, log into your Azure RBAC tenant and select your subscription.
+
+   The following command will perform a device login. Ensure you're logging in with the Azure AD user that has access to your AKS resources (likely the one you did your deployment with.)
+
+   ```bash
+   az login
+
+   az account set -s <subscription name or id>
+   ```
+
+1. From your Azure Bastion connection, get your AKS credentials.
+
+   ```bash
+   export AKS_CLUSTER_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.aksClusterName.value -o tsv)
+
+   az aks get-credentials -g rg-bu0001a0005 -n $AKS_CLUSTER_NAME
+   ```
+
+1. From your Azure Bastion connection, test cluster access and authenticate as a cluster admin user.
+
+   The following command will force you to authenticate into your AKS cluster. This will start another device login flow. For this one, log in with a user that is a member of your cluster admin group in the Azure AD tenet you selected to be used for Kubernetes Cluster API RBAC.
+
+   ```bash
+   kubectl get nodes
+   ```
+
+   If all is successful you should see something like:
+
+   ```output
+   NAME                                  STATUS   ROLES   AGE     VERSION
+   aks-npinscope01-26621167-vmss000000   Ready    agent   3d21h   v1.19.3
+   aks-npinscope01-26621167-vmss000001   Ready    agent   3d22h   v1.19.3
+   aks-npooscope01-26621167-vmss000000   Ready    agent   3d22h   v1.19.3
+   aks-npooscope01-26621167-vmss000001   Ready    agent   3d22h   v1.19.3
+   aks-npsystem-26621167-vmss000000      Ready    agent   3d22h   v1.19.3
+   aks-npsystem-26621167-vmss000001      Ready    agent   3d22h   v1.19.3
+   aks-npsystem-26621167-vmss000002      Ready    agent   3d21h   v1.19.3
+   ```
+
+1. From your Azure Bastion connection, deploy Flux.
+
+   ```bash
+   kubectl apply -f https://raw.githubusercontent.com/<YOUR_GITHUB_ORG>/aks-secure-baseline/main/k8s-resources/flux-system/flux-components.yaml
+   ```
+
+   ```bash
+   kubectl wait --namespace flux-system --for=condition=available deployment/source-controller --timeout=90s
+   ```
+
+1. Disconnect from Azure Bastion.
+
+Generally speaking, this will be the last time you should need to use direct cluster access tools like `kubectl` for day-to-day configuration operations on this cluster (outside of break-fix situations). Between ARM for Azure Resource definitions and the application of manifests via Flux, all normal configuration activities can be performed without the need to use `kubectl`. You will however see us use it for the upcoming workload deployment. This is because the SDLC component of workloads are not in scope for this reference implementation, as this is focused the infrastructure and baseline configuration.
 
 
    If you used your own fork of this GitHub repo, update the [`flux.yaml`](./cluster-baseline-settings/flux.yaml) file to include reference to your own repo and change the URL below to point to yours as well. Also, since Flux will begin processing the manifests in [`cluster-baseline-settings/`](./cluster-baseline-settings/) now would be a good time to:
@@ -115,7 +200,7 @@ GitOps allows a team to author Kubernetes manifest files, persist them in their 
 1. Wait for Flux to be ready before proceeding.
 
    ```bash
-   kubectl wait --namespace cluster-baseline-settings --for=condition=ready pod --selector=app.kubernetes.io/name=flux --timeout=90s
+   kubectl wait --namespace flux-system --for=condition=available deployment/source-controller --timeout=90s
    ```
 
 Generally speaking, this will be the last time you should need to use `kubectl` for day-to-day configuration operations on this cluster (outside of break-fix situations). Between ARM for Azure Resource definitions and the application of manifests via Flux, all normal configuration activities can be performed without the need to use `kubectl`. You will however see us use it for the upcoming workload deployment. This is because the SDLC component of workloads are not in scope for this reference implementation, as this is focused the infrastructure and baseline configuration.

@@ -1215,12 +1215,20 @@ spec:
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
-        agentpool: npooscope01
+        pci-scope: out-of-scope
       tolerations:
       - key: pci-scope
         operator: Equal
         value: out-of-scope
         effect: NoExecute
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: NotIn
+                values: system
       securityContext:
         fsGroup: 1337
       terminationGracePeriodSeconds: 60
@@ -1304,12 +1312,20 @@ spec:
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
-        agentpool: npooscope01
+        pci-scope: out-of-scope
       tolerations:
       - key: pci-scope
         operator: Equal
         value: out-of-scope
         effect: NoExecute
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: NotIn
+                values: system
       terminationGracePeriodSeconds: 10
       volumes:
       - emptyDir: {}

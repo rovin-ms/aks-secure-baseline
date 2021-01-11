@@ -879,7 +879,29 @@
                                         }
                                     ],
                                     "targetFqdns": [
-                                        "github.com"
+                                        "github.com",
+                                        "api.github.com",
+                                        "ghcr.io",
+                                        "github-production-container-registry.s3.amazonaws.com"
+                                    ]
+                                },
+                                {
+                                    "name": "pull-flux-images",
+                                    "description": "Allows pulling images from your container registry or GitHub container registry",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('aksIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "*.azurecr.io",
+                                        "*.privatelink.azurecr.io",
+                                        "ghcr.io",
+                                        "github-production-container-registry.s3.amazonaws.com"
                                     ]
                                 }
                             ]

@@ -22,7 +22,7 @@ Now that [the AKS cluster](./05-aks-cluster.md) has been deployed, the next step
    1. Update the two `image:` values in `flux-system/flux-components.yaml` to your container registry instead of the default public container registry. See comment in file for details.
 
       ```bash
-      sed -i -e "s|image: ghcr\.io/fluxcd/source-controller:v0.5.6|image: ${ACR_NAME}\.privatelink\.azurecr\.io/fluxcd/source-controller:v0\.5\.6|" -e "s|image: ghcr\.io/fluxcd/kustomize-controller:v0.5.3|image: ${ACR_NAME}\.privatelink\.azurecr\.io/fluxcd/kustomize-controller:v0\.5\.3|" k8s-resources/flux-system/flux-components.yaml
+      sed -i -e "s|image: ghcr\.io/fluxcd/source-controller:v0.5.6|image: ${ACR_NAME}\.azurecr\.io/fluxcd/source-controller:v0\.5\.6|" -e "s|image: ghcr\.io/fluxcd/kustomize-controller:v0.5.3|image: ${ACR_NAME}\.azurecr\.io/fluxcd/kustomize-controller:v0\.5\.3|" k8s-resources/flux-system/flux-components.yaml
       ```
 
 

@@ -109,7 +109,7 @@
                         }
                     },
                     {
-                        "name": "AllowInternetOutBound",
+                        "name": "Allow443InternetOutBound",
                         "properties": {
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
@@ -118,6 +118,19 @@
                             "destinationAddressPrefix": "Internet",
                             "access": "Allow",
                             "priority": 100,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "Allow443VnetOutBound",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "destinationPortRange": "443",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 110,
                             "direction": "Outbound"
                         }
                     },

@@ -27,8 +27,8 @@ Your github repo will be the source of truth for your cluster's configuration. T
    export ACR_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.containerRegistryName.value -o tsv)
    
    # [Combined this takes about one minute.]
-   az acr import --source ghcr.io/fluxcd/kustomize-controller:v0.5.3 -n $ACR_NAME
-   az acr import --source ghcr.io/fluxcd/source-controller:v0.5.6 -n $ACR_NAME
+   az acr import --source ghcr.io/fluxcd/kustomize-controller:v0.6.0 -n $ACR_NAME
+   az acr import --source ghcr.io/fluxcd/source-controller:v0.6.0 -n $ACR_NAME
    ```
 
 1. Update flux to use images from your container registry.

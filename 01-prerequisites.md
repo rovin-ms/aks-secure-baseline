@@ -26,11 +26,13 @@ This is the starting point for the end-to-end instructions on deploying the [AKS
 
    Ensure you're logged into the subscription in which you plan on deploying this reference to.
 
-1. Fork this repository and clone this repo locally.
+1. Fork this repository and clone it locally.
 
    ```bash
    git clone https://github.com/YOUR_GH_ORG_OR_USER/aks-regulated-baseline.git
    ```
+
+   If you wish, you may make your cloned git repository _private_; no future instructions depend on this repo being public. You may continue following these instructions in your own repo, or you may continue using this repo as your guide.
 
    > :bulb: The steps shown here and elsewhere in the reference implementation use Bash shell commands. On Windows, you can use the [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/about#what-is-wsl-2) to run Bash.
 

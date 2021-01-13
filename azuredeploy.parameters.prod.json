@@ -22,6 +22,9 @@
     },
     "aksIngressControllerCertificate": {
       "value": "[base64 public cert data]"
+    },
+    "jumpBoxImageResourceId": {
+      "value": "/subscriptions/[subscription id]/resourceGroups/rg-bu0001a0005/providers/Microsoft.Compute/images/img-aksopsjb-TIMESTAMP"
     }
   }
 }

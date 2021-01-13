@@ -641,6 +641,25 @@
                                     ]
                                 },
                                 {
+                                    "name": "install-flux",
+                                    "description": "This is required as the Packer VMs needs to install flux.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "raw.githubusercontent.com",
+                                        "api.github.com",
+                                        "toolkit.fluxcd.io",
+                                        "*.s3.amazonaws.com"
+                                    ]
+                                },
+                                {
                                     "name": "install-terraform",
                                     "description": "This is required as the Packer VMs needs to install terraform.",
                                     "sourceIpGroups": [

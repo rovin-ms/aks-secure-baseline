@@ -29,7 +29,9 @@ This is the starting point for the end-to-end instructions on deploying the [AKS
 1. Fork this repository and clone it locally.
 
    ```bash
-   git clone https://github.com/YOUR_GH_ORG_OR_USER/aks-regulated-baseline.git
+   export GITHUB_ACCOUNT_NAME=REPLACE_ME_WITH_YOUR_GITHUBACCOUNTNAME
+
+   git clone https://github.com/${GITHUB_ACCOUNT_NAME}/aks-regulated-baseline.git
    ```
 
    If you wish, you may make your cloned git repository _private_; no future instructions depend on this repo being public. You may continue following these instructions in your own repo, or you may continue using this repo as your guide.

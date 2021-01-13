@@ -33,20 +33,20 @@ Your github repo will be the source of truth for your cluster's configuration. T
 
 1. Update flux to use images from your container registry.
 
-   Update the two `image:` values in `k8s-resources/flux-system/flux-components.yaml` to your container registry instead of the default public container registry. See comment in file for details.
+   Update the two `newName:` values in `k8s-resources/flux-system/kustomization.yaml` to your container registry instead of the default public container registry. See comment in file for details.
 
    ```bash
-   sed -i "s/image: ghcr\.io/image: ${ACR_NAME}\.azurecr\.io/g" k8s-resources/flux-system/flux-components.yaml
+   sed -i "s/REPLACE_ME_WITH_YOUR_ACRNAME/${ACR_NAME}/g" k8s-resources/flux-system/kustomization.yaml
 
-   git commit -m "Update Flux to use images from my ACR instead of public container registries." .
+   git commit -m "Update Flux to use images from my ACR instead of public container registries."
    ```
 
 1. Update flux to pull from your repo instead of the mspnp repo.
 
    ```bash
-   sed -i -e 's|github.com/mspnp|github.com/<YOUR_GITHUB_ORG>|' k8s-resources/flux-system/flux-sync.yaml
+   sed -i "s/REPLACE_ME_WITH_YOUR_GITHUBACCOUNTNAME/${GITHUB_ACCOUNT_NAME}/' k8s-resources/flux-system/gotk-sync.yaml
 
-   git commit -m "Update Flux to pull from my fork instead of the upstream Microsoft repo." .
+   git commit -m "Update Flux to pull from my fork instead of the upstream Microsoft repo."
    ```
 
 1. Push those two changes to your repo.
@@ -119,7 +119,7 @@ Your github repo will be the source of truth for your cluster's configuration. T
 1. From your Azure Bastion connection, bootstrap Flux.
 
    ```bash
-   kubectl apply -f https://raw.githubusercontent.com/<YOUR_GITHUB_ORG>/aks-secure-baseline/main/k8s-resources/flux-system/flux-components.yaml
+   kubectl apply -k https://raw.githubusercontent.com/<YOUR_GITHUB_ORG>/aks-secure-baseline/main/k8s-resources/flux-system/
    ```
 
    ```bash

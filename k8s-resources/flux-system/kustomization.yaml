@@ -7,6 +7,6 @@ patchesStrategicMerge:
 - gotk-components-patch.yaml
 images:
 - name: ghcr.io/fluxcd/source-controller
-  newName: acrakslsuoccqde6qa2.azurecr.io/fluxcd/source-controller
+  newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/fluxcd/source-controller
 - name: ghcr.io/fluxcd/kustomize-controller
-  newName: acrakslsuoccqde6qa2.azurecr.io/fluxcd/kustomize-controller
+  newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/fluxcd/kustomize-controller

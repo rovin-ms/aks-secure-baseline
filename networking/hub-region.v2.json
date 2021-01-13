@@ -131,7 +131,7 @@
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2020-05-01",
             "location": "[parameters('location')]",
-            "comments": "Wraps the AzureBastion subnet in this regional hub",
+            "comments": "Wraps the AzureBastion subnet in this regional hub. Source: https://docs.microsoft.com/azure/bastion/bastion-nsg",
             "properties": {
                 "securityRules": [
                     {
@@ -177,6 +177,23 @@
                         }
                     },
                     {
+                        "name": "AllowBastionHostToHostInBound",
+                        "properties": {
+                            "description": "Service Requirement. Allow Required Host to Host Communication.",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "destinationPortRanges": [
+                                "8080",
+                                "5701"
+                            ],
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 130,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
                         "name": "DenyAllInBound",
                         "properties": {
                             "protocol": "*",
@@ -207,7 +224,7 @@
                         "name": "AllowRdpToVnetOutBound",
                         "properties": {
                             "protocol": "Tcp",
-                            "description": "Unused, but required for ARM validation.",
+                            "description": "Unused in this RI, but required for ARM validation.",
                             "sourcePortRange": "*",
                             "sourceAddressPrefix": "*",
                             "destinationPortRange": "3389",
@@ -228,6 +245,37 @@
                             "destinationAddressPrefix": "AzureCloud",
                             "access": "Allow",
                             "priority": 120,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "AllowBastionHostToHostOutBound",
+                        "properties": {
+                            "description": "Service Requirement. Allow Required Host to Host Communication.",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "destinationPortRanges": [
+                                "8080",
+                                "5701"
+                            ],
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 130,
+                            "direction": "Outbound"
+                        }
+                    },
+                    {
+                        "name": "AllowBastionCertificateValidationOutBound",
+                        "properties": {
+                            "description": "Service Requirement. Allow Required Session and Certificate Validation.",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationPortRange": "80",
+                            "destinationAddressPrefix": "Internet",
+                            "access": "Allow",
+                            "priority": 140,
                             "direction": "Outbound"
                         }
                     },

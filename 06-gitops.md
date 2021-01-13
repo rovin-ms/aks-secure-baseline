@@ -24,7 +24,7 @@ Your github repo will be the source of truth for your cluster's configuration. T
 
    ```bash
    # Get your Azure Container Registry service name
-   export ACR_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.containerRegistryName.value -o tsv)
+   ACR_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.containerRegistryName.value -o tsv)
    
    # [Combined this takes about one minute.]
    az acr import --source ghcr.io/fluxcd/kustomize-controller:v0.6.0 -n $ACR_NAME
@@ -57,27 +57,47 @@ Your github repo will be the source of truth for your cluster's configuration. T
 
 1. Connect to a jump box node via Azure Bastion.
 
+   If this is the first time you've used Azure Bastion, here is a detailed walk through of this process.
+
+   1. Open the [Azure Portal](https://portal.azure.com).
+   2. Navigate to the **rg-bu0001a0005** resource group.
+   3. Click on the Virtual Machine Scale Set resource named **vmss-jumpboxes**.
+   4. Click **Instances**.
+   5. Click the name of any of the two listed instances. E.g. **vmss-jumpboxes_0**
+   6. Click **Connect** -> **Bastion** -> **Use Bastion**
+   7. Fill in the username field with `azuresu` (TODO: BUILD OUT INSTRUCTIONS FOR ADDING USERS)
+   8. Select **SSH Private Key from Local File** and select your private key file.
+   9. Provide your SSH passphrase in **SSH Passphrase** if your private key is protected with one.
+   10. Click **Connect**
+   11. For "copy on select / paste on right-click" support, your browser may request your permission to support those features. It's recommended that you _Allow_ that feature. If you don't, you'll have to use the **>>** flyout on the screen to perform copy and paste actions.
+   12. Welcome to your jump box!
+
 1. From your Azure Bastion connection, log into your Azure RBAC tenant and select your subscription.
 
-   The following command will perform a device login. Ensure you're logging in with the Azure AD user that has access to your AKS resources (likely the one you did your deployment with.)
+   The following command will perform a device login. Ensure you're logging in with the Azure AD user that has access to your AKS resources (i.e. the one you did your deployment with.)
 
    ```bash
    az login
+   # This will give you a link to https://microsoft.com/devicelogin where you can enter the provided code and perform authentication.
 
+   # Ensure you're on the correct subscription
+   az account show
+
+   # If not, select the correct subscription
    az account set -s <subscription name or id>
    ```
 
 1. From your Azure Bastion connection, get your AKS credentials.
 
    ```bash
-   export AKS_CLUSTER_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.aksClusterName.value -o tsv)
+   AKS_CLUSTER_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.aksClusterName.value -o tsv)
 
    az aks get-credentials -g rg-bu0001a0005 -n $AKS_CLUSTER_NAME
    ```
 
 1. From your Azure Bastion connection, test cluster access and authenticate as a cluster admin user.
 
-   The following command will force you to authenticate into your AKS cluster. This will start another device login flow. For this one, log in with a user that is a member of your cluster admin group in the Azure AD tenet you selected to be used for Kubernetes Cluster API RBAC.
+   The following command will force you to authenticate into your AKS cluster's control plane. This will start yet another device login flow. For this one (**Azure Kubernetes Service AAD Client**), log in with a user that is a member of your cluster admin group in the Azure AD tenet you selected to be used for Kubernetes Cluster API RBAC. This is the user you're performing cluster management commands (e.g. `kubectl`) as.
 
    ```bash
    kubectl get nodes
@@ -86,17 +106,17 @@ Your github repo will be the source of truth for your cluster's configuration. T
    If all is successful you should see something like:
 
    ```output
-   NAME                                  STATUS   ROLES   AGE     VERSION
-   aks-npinscope01-26621167-vmss000000   Ready    agent   3d21h   v1.19.3
-   aks-npinscope01-26621167-vmss000001   Ready    agent   3d22h   v1.19.3
-   aks-npooscope01-26621167-vmss000000   Ready    agent   3d22h   v1.19.3
-   aks-npooscope01-26621167-vmss000001   Ready    agent   3d22h   v1.19.3
-   aks-npsystem-26621167-vmss000000      Ready    agent   3d22h   v1.19.3
-   aks-npsystem-26621167-vmss000001      Ready    agent   3d22h   v1.19.3
-   aks-npsystem-26621167-vmss000002      Ready    agent   3d21h   v1.19.3
+   NAME                                  STATUS   ROLES   AGE   VERSION
+   aks-npinscope01-26621167-vmss000000   Ready    agent   20m   v1.19.3
+   aks-npinscope01-26621167-vmss000001   Ready    agent   20m   v1.19.3
+   aks-npooscope01-26621167-vmss000000   Ready    agent   20m   v1.19.3
+   aks-npooscope01-26621167-vmss000001   Ready    agent   20m   v1.19.3
+   aks-npsystem-26621167-vmss000000      Ready    agent   20m   v1.19.3
+   aks-npsystem-26621167-vmss000001      Ready    agent   20m   v1.19.3
+   aks-npsystem-26621167-vmss000002      Ready    agent   20m   v1.19.3
    ```
 
-1. From your Azure Bastion connection, deploy Flux.
+1. From your Azure Bastion connection, bootstrap Flux.
 
    ```bash
    kubectl apply -f https://raw.githubusercontent.com/<YOUR_GITHUB_ORG>/aks-secure-baseline/main/k8s-resources/flux-system/flux-components.yaml

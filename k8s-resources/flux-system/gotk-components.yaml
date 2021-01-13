@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
   name: flux-system
 ---
 apiVersion: apiextensions.k8s.io/v1
@@ -13,7 +13,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.3.0
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
   name: buckets.source.toolkit.fluxcd.io
 spec:
   group: source.toolkit.fluxcd.io
@@ -197,7 +197,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.3.0
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
   name: gitrepositories.source.toolkit.fluxcd.io
 spec:
   group: source.toolkit.fluxcd.io
@@ -407,7 +407,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.3.0
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
   name: helmcharts.source.toolkit.fluxcd.io
 spec:
   group: source.toolkit.fluxcd.io
@@ -597,7 +597,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.3.0
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
   name: helmrepositories.source.toolkit.fluxcd.io
 spec:
   group: source.toolkit.fluxcd.io
@@ -761,7 +761,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.3.0
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
   name: kustomizations.kustomize.toolkit.fluxcd.io
 spec:
   group: kustomize.toolkit.fluxcd.io
@@ -1047,7 +1047,7 @@ kind: Role
 metadata:
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
   name: crd-controller-flux-system
   namespace: flux-system
 rules:
@@ -1095,7 +1095,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
   name: crd-controller-flux-system
   namespace: flux-system
 roleRef:
@@ -1112,7 +1112,7 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
   name: cluster-reconciler-flux-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -1128,7 +1128,7 @@ kind: Service
 metadata:
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
     control-plane: controller
   name: source-controller
   namespace: flux-system
@@ -1147,7 +1147,7 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
     control-plane: controller
   name: kustomize-controller
   namespace: flux-system
@@ -1166,23 +1166,16 @@ spec:
     spec:
       containers:
       - args:
-        - --events-addr=
         - --watch-all-namespaces=true
-        - --log-level=info
-        - --log-json
+        - --log-level=debug
+        - --log-encoding=json
         - --enable-leader-election
         env:
         - name: RUNTIME_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        # PRODUCTION READINESS CHANGE REQUIRED
-        # This image should be sourced from a non-public container registry, such as the
-        # one deployed along side of this reference implementation.
-        # az acr import --source ghcr.io/fluxcd/kustomize-controller:v0.5.3 -n <your-acr-instance-name>
-        # and then set this to
-        # image: <your-acr-instance-name>.azurecr.io/fluxcd/kustomize-controller:v0.5.3
-        image: ghcr.io/fluxcd/kustomize-controller:v0.5.3
+        image: ghcr.io/fluxcd/kustomize-controller:v0.6.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -1215,21 +1208,6 @@ spec:
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
-        pci-scope: out-of-scope
-      tolerations:
-      - key: pci-scope
-        operator: Equal
-        value: out-of-scope
-        effect: NoExecute
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.azure.com/mode
-                operator: NotIn
-                values:
-                - system
       securityContext:
         fsGroup: 1337
       terminationGracePeriodSeconds: 60
@@ -1242,7 +1220,7 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
+    app.kubernetes.io/version: 0.6.0
     control-plane: controller
   name: source-controller
   namespace: flux-system
@@ -1261,10 +1239,9 @@ spec:
     spec:
       containers:
       - args:
-        - --events-addr=
         - --watch-all-namespaces=true
-        - --log-level=info
-        - --log-json
+        - --log-level=debug
+        - --log-encoding=json
         - --enable-leader-election
         - --storage-path=/data
         - --storage-adv-addr=source-controller.$(RUNTIME_NAMESPACE).svc.cluster.local.
@@ -1273,13 +1250,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        # PRODUCTION READINESS CHANGE REQUIRED
-        # This image should be sourced from a non-public container registry, such as the
-        # one deployed along side of this reference implementation.
-        # az acr import --source ghcr.io/fluxcd/source-controller:v0.5.6 -n <your-acr-instance-name>
-        # and then set this to
-        # image: <your-acr-instance-name>.azurecr.io/fluxcd/source-controller:v0.5.6
-        image: ghcr.io/fluxcd/source-controller:v0.5.6
+        image: ghcr.io/fluxcd/source-controller:v0.6.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -1313,77 +1284,9 @@ spec:
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
-        pci-scope: out-of-scope
-      tolerations:
-      - key: pci-scope
-        operator: Equal
-        value: out-of-scope
-        effect: NoExecute
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.azure.com/mode
-                operator: NotIn
-                values:
-                - system
       terminationGracePeriodSeconds: 10
       volumes:
       - emptyDir: {}
         name: data
       - emptyDir: {}
         name: tmp
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  labels:
-    app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
-  name: allow-scraping
-  namespace: flux-system
-spec:
-  ingress:
-  - from:
-    - namespaceSelector: {}
-    ports:
-    - port: 8080
-      protocol: TCP
-  podSelector: {}
-  policyTypes:
-  - Ingress
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  labels:
-    app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
-  name: allow-webhooks
-  namespace: flux-system
-spec:
-  ingress:
-  - from:
-    - namespaceSelector: {}
-  podSelector:
-    matchLabels:
-      app: notification-controller
-  policyTypes:
-  - Ingress
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  labels:
-    app.kubernetes.io/instance: flux-system
-    app.kubernetes.io/version: latest
-  name: deny-ingress
-  namespace: flux-system
-spec:
-  ingress:
-  - from:
-    - podSelector: {}
-  podSelector: {}
-  policyTypes:
-  - Ingress

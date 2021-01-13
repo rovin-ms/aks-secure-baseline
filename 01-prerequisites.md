@@ -32,6 +32,7 @@ This is the starting point for the end-to-end instructions on deploying the [AKS
    export GITHUB_ACCOUNT_NAME=REPLACE_ME_WITH_YOUR_GITHUBACCOUNTNAME
 
    git clone https://github.com/${GITHUB_ACCOUNT_NAME}/aks-regulated-baseline.git
+   cd aks-regulated-baseline
    ```
 
    If you wish, you may make your cloned git repository _private_; no future instructions depend on this repo being public. You may continue following these instructions in your own repo, or you may continue using this repo as your guide.

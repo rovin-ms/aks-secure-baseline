@@ -1330,7 +1330,10 @@
                         },
                         "tags": {
                             "pci-scope": "out-of-scope"
-                        }
+                        },
+                        "nodeTaints": [
+                            "CriticalAddonsOnly=true:NoSchedule"
+                        ]
                     },
                     {
                         "name": "npinscope01",
@@ -2271,7 +2274,8 @@
                             "kube-system",
                             "gatekeeper-system",
                             "azure-arc",
-                            "cluster-baseline-settings"
+                            "cluster-baseline-settings",
+                            "flux-system"
                         ]
                     },
                     "effect": {

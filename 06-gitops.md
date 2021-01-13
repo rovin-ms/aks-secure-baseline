@@ -38,14 +38,16 @@ Your github repo will be the source of truth for your cluster's configuration. T
    ```bash
    sed -i "s/REPLACE_ME_WITH_YOUR_ACRNAME/${ACR_NAME}/g" k8s-resources/flux-system/kustomization.yaml
 
+   git add .
    git commit -m "Update Flux to use images from my ACR instead of public container registries."
    ```
 
 1. Update flux to pull from your repo instead of the mspnp repo.
 
    ```bash
-   sed -i "s/REPLACE_ME_WITH_YOUR_GITHUBACCOUNTNAME/${GITHUB_ACCOUNT_NAME}/' k8s-resources/flux-system/gotk-sync.yaml
+   sed -i "s/REPLACE_ME_WITH_YOUR_GITHUBACCOUNTNAME/${GITHUB_ACCOUNT_NAME}/" k8s-resources/flux-system/gotk-sync.yaml
 
+   git add .
    git commit -m "Update Flux to pull from my fork instead of the upstream Microsoft repo."
    ```
 
@@ -119,16 +121,61 @@ Your github repo will be the source of truth for your cluster's configuration. T
 1. From your Azure Bastion connection, bootstrap Flux.
 
    ```bash
-   kubectl apply -k https://raw.githubusercontent.com/<YOUR_GITHUB_ORG>/aks-secure-baseline/main/k8s-resources/flux-system/
+   git clone https://github.com/${GITHUB_ACCOUNT_NAME}/aks-regulated-cluster
+   cd aks-regulated-cluster
+
+   kubectl create -k k8s-resources/flux-system
    ```
+
+   If this process fails with an error similar to
+
+   ```output
+   unable to recognize ".": no matches for kind "Kustomization" in version "kustomize.toolkit.fluxcd.io/v1beta1"
+   unable to recognize ".": no matches for kind "GitRepository" in version "source.toolkit.fluxcd.io/v1beta1"
+   ```
+
+   Then execute the same command again.  TODO: There is a resource race condition that I'd like to solve before we go live here.
 
    ```bash
    kubectl wait --namespace flux-system --for=condition=available deployment/source-controller --timeout=90s
+
+   # If you have flux installed you can also inspect using the following commands
+   flux get sources git
+   flux get kustomizations
+   flux check --components source-controller,kustomize-controller
    ```
+
+   TODO: Add Network Policies to Flux -  Right now it's Wild Wild West in there!
+   TODO: Migrate to `flux bootstrap` but ensure we're pinning to a well-known (tested) version! no `latest` here.
 
 1. Disconnect from Azure Bastion.
 
 Generally speaking, this will be the last time you should need to use direct cluster access tools like `kubectl` for day-to-day configuration operations on this cluster (outside of break-fix situations). Between ARM for Azure Resource definitions and the application of manifests via Flux, all normal configuration activities can be performed without the need to use `kubectl`. You will however see us use it for the upcoming workload deployment. This is because the SDLC component of workloads are not in scope for this reference implementation, as this is focused the infrastructure and baseline configuration.
+
+## Flux configuration
+
+The Flux implementation in this reference architecture is simplistic. Flux in this reference implementation is simply monitoring manifests in the ALL namespaces. It doesn't account for concepts like:
+
+* Built-in [bootstrapping support](https://toolkit.fluxcd.io/guides/installation/#bootstrap).
+* [multi-tenancy](https://github.com/fluxcd/flux2-multi-tenancy)
+* [private GitHub repos](https://toolkit.fluxcd.io/components/source/gitrepositories/#ssh-authentication)
+* kustomization [under/overlays](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#bases-and-overlays)
+* Flux's [Notifications controller](https://github.com/fluxcd/notification-controller) to [alert on changes](https://toolkit.fluxcd.io/guides/notifications/).
+* Flux's [Helm controller](https://github.com/fluxcd/helm-controller) to [manage helm releases](https://toolkit.fluxcd.io/guides/helmreleases/)
+* Flux's [extensive monitoring](https://toolkit.fluxcd.io/guides/monitoring/) features.
+
+This reference implementation isn't going to dive into the nuances of GitOps manifest organization. A lot of that depends on your name spacing, multi-tenant needs, multi stage deployment topologies (dev, pre-prod, prod), etc. The key takeaway here is to ensure that you're managing your Kubernetes resources in a declarative manner with a reconcile loop, to achieve desired state configuration within your cluster. Ensuring your cluster internally is managed by a single, appropriately-privileged, observable pipeline will aide in compliance. You'll have a git trail that aligns with a log trail from your GitOps toolkit.
+
+## Public dependencies
+
+As with any dependency your cluster or workload has, you'll want to minimize or eliminate your reliance on services in which you do not have an SLO or do not meet your observability/compliance requirements. Your cluster's GitOps operators should rely on a git repository that satisfies your reliability & compliance requirements. Consider using a git-mirror approach to bring your cluster dependencies to be "network local" and provide a fault-tolerant syncing mechanism from centralized repositories (like your organization's GitHub private repositories). Following an approach like this will air gap git repositories as an external dependency, at the cost of added complexity.
+
+
+
+
+
+
+OLD BELOW:
 
 
    If you used your own fork of this GitHub repo, update the [`flux.yaml`](./cluster-baseline-settings/flux.yaml) file to include reference to your own repo and change the URL below to point to yours as well. Also, since Flux will begin processing the manifests in [`cluster-baseline-settings/`](./cluster-baseline-settings/) now would be a good time to:

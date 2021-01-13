@@ -1,4 +1,15 @@
-kind: Namespace
 apiVersion: v1
+kind: Namespace
 metadata:
   name: a0005
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: a0005
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress

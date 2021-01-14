@@ -5,7 +5,7 @@ resources:
 - gotk-components.yaml
 - gotk-sync.yaml
 - limit-range.yaml
-- resource-quote.yaml
+- resource-quota.yaml
 patchesStrategicMerge:
 - gotk-components-patch.yaml
 images:

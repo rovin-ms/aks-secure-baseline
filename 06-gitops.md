@@ -145,9 +145,6 @@ Your github repo will be the source of truth for your cluster's configuration. T
    flux check --components source-controller,kustomize-controller
    ```
 
-   TODO: Add Network Policies to Flux -  Right now it's Wild Wild West in there!
-   TODO: Migrate to `flux bootstrap` but ensure we're pinning to a well-known (tested) version! no `latest` here.
-
 1. Disconnect from Azure Bastion.
 
 Generally speaking, this will be the last time you should need to use direct cluster access tools like `kubectl` for day-to-day configuration operations on this cluster (outside of break-fix situations). Between ARM for Azure Resource definitions and the application of manifests via Flux, all normal configuration activities can be performed without the need to use `kubectl`. You will however see us use it for the upcoming workload deployment. This is because the SDLC component of workloads are not in scope for this reference implementation, as this is focused the infrastructure and baseline configuration.
@@ -157,14 +154,14 @@ Generally speaking, this will be the last time you should need to use direct clu
 The Flux implementation in this reference architecture is simplistic. Flux in this reference implementation is simply monitoring manifests in the ALL namespaces. It doesn't account for concepts like:
 
 * Built-in [bootstrapping support](https://toolkit.fluxcd.io/guides/installation/#bootstrap).
-* [multi-tenancy](https://github.com/fluxcd/flux2-multi-tenancy)
-* [private GitHub repos](https://toolkit.fluxcd.io/components/source/gitrepositories/#ssh-authentication)
-* kustomization [under/overlays](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#bases-and-overlays)
+* [Multi-tenancy](https://github.com/fluxcd/flux2-multi-tenancy)
+* [Private GitHub repos](https://toolkit.fluxcd.io/components/source/gitrepositories/#ssh-authentication)
+* Kustomization [under/overlays](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#bases-and-overlays)
 * Flux's [Notifications controller](https://github.com/fluxcd/notification-controller) to [alert on changes](https://toolkit.fluxcd.io/guides/notifications/).
 * Flux's [Helm controller](https://github.com/fluxcd/helm-controller) to [manage helm releases](https://toolkit.fluxcd.io/guides/helmreleases/)
-* Flux's [extensive monitoring](https://toolkit.fluxcd.io/guides/monitoring/) features.
+* Flux's [monitoring](https://toolkit.fluxcd.io/guides/monitoring/) features.
 
-This reference implementation isn't going to dive into the nuances of GitOps manifest organization. A lot of that depends on your name spacing, multi-tenant needs, multi stage deployment topologies (dev, pre-prod, prod), etc. The key takeaway here is to ensure that you're managing your Kubernetes resources in a declarative manner with a reconcile loop, to achieve desired state configuration within your cluster. Ensuring your cluster internally is managed by a single, appropriately-privileged, observable pipeline will aide in compliance. You'll have a git trail that aligns with a log trail from your GitOps toolkit.
+This reference implementation isn't going to dive into the nuances of GitOps manifest organization. A lot of that depends on your namespacing, multi-tenant needs, multi-stage (dev, pre-prod, prod) deployment needs, etc. The key takeaway here is to ensure that you're managing your Kubernetes resources in a declarative manner with a reconcile loop, to achieve desired state configuration within your cluster. Ensuring your cluster internally is managed by a single, appropriately-privileged, observable pipelines will aide in compliance. You'll have a git trail that aligns with a log trail from your GitOps toolkit.
 
 ## Public dependencies
 
@@ -188,107 +185,6 @@ Your choice of in-cluster tooling to achieve your compliance needs cannot be sug
 This reference implementation also installs a default deployment of Falco. It is not configured for alerts, nor tuned to any specific needs. It uses the default rules as they were defined when these files were generated. This is being installed for illustrative purposes, and you're encouraged to evaluate if a product like Falco is relevant to you, and in your final implementation tune its deployment to your needs. This tooling, as most security tooling will be, is highly-privileged.  In this implementation, it's running on all user node pools (in scope and out of scope), but not on the system node pools.
 
 You should ensure all necessary tooling is applied as part of your initial bootstrapping process to ensure coverage immediately.
-
-
-
-
-
-OLD BELOW:
-
-
-   If you used your own fork of this GitHub repo, update the [`flux.yaml`](./cluster-baseline-settings/flux.yaml) file to include reference to your own repo and change the URL below to point to yours as well. Also, since Flux will begin processing the manifests in [`cluster-baseline-settings/`](./cluster-baseline-settings/) now would be a good time to:
-   >
-   > * update the `<replace-with-an-aad-group-object-id-for-this-cluster-role-binding>` placeholder in [`user-facing-cluster-role-aad-group.yaml`](./cluster-baseline-settings/user-facing-cluster-role-aad-group.yaml) with the Object IDs for the Azure AD group(s) you created for management purposes. If you don't, the manifest will still apply, but AAD integration will not be mapped to your specific AAD configuration.
-   > * Update three `image` manifest references to your container registry instead of the default public container registry. See comment in each file for instructions.
-   >   * update the two `image:` values in [`flux.yaml`](./cluster-baseline-settings/flux.yaml).
-   >   * update the one `image:` values in [`kured-1.4.0-dockerhub.yaml`](./cluster-baseline-settings/kured-1.4.0-dockerhub.yaml).
-
-GitOps allows a team to author Kubernetes manifest files, persist them in their git repo, and have them automatically apply to their cluster as changes occur.  This reference implementation is focused on the baseline cluster, so Flux is managing cluster-level concerns. This is distinct from workload-level concerns, which would be possible as well to manage via Flux, and would typically be done by additional Flux operators in the cluster. The namespace `cluster-baseline-settings` will be used to provide a logical division of the cluster configuration from workload configuration.  Examples of manifests that are applied:
-
-* Cluster Role Bindings for the AKS-managed Azure AD integration
-* AAD Pod Identity
-* CSI driver and Azure KeyVault CSI Provider
-* the workload's namespace named `a0008`
-
-1. Connect to a jumpbox instance.
-
-   ```bash
-   kubectl version --client
-   ```
-
-1. Get the cluster name.
-
-   ```bash
-   export AKS_CLUSTER_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.aksClusterName.value -o tsv)
-   ```
-
-1. Get AKS `kubectl` credentials (as a user that has admin permissions to the cluster).
-
-   > In the [Azure Active Directory Integration](03-aad.md) step, we placed our cluster under AAD group-backed RBAC. This is the first time we are seeing this used. `az aks get-credentials` allows you to use `kubectl` commands against your cluster. Without the AAD integration, you'd have to use `--admin` here, which isn't what we want to happen. Here, you'll log in with a user that has been added to the Azure AD security group used to back the Kubernetes RBAC admin role. Executing the first `kubectl` command below will invoke the AAD login process to auth the _user of your choice_, which will then be checked against Kubernets RBAC to perform the action. The user you choose to log in with _must be a member of the AAD group bound_ to the `cluster-admin` ClusterRole. For simplicity could either use the "break-glass" admin user created in [Azure Active Directory Integration](03-aad.md) (`bu0001a0008-admin`) or any user you assign to the `cluster-admin` group assignment in your [`user-facing-cluster-role-aad-group.yaml`](cluster-baseline-settings/user-facing-cluster-role-aad-group.yaml) file. If you skipped those steps you can use `--admin` to proceed, but proper AAD group-based RBAC access is a critical security function that you should invest time in setting up.
-
-   ```bash
-   az aks get-credentials -g rg-bu0001a0008 -n $AKS_CLUSTER_NAME
-   ```
-
-   :warning: At this point two important steps are happening:
-
-      * The `az aks get-credentials` command will be fetch a `kubeconfig` containing references to the AKS cluster you have created earlier.
-      * To _actually_ use the cluster you will need to authenticate. For that, run any `kubectl` commands which at this stage will prompt you to authenticate against Azure Active Directory. For example, run the following command:
-
-   ```bash
-   kubectl get nodes
-   ```
-
-   Once the authentication happens successfully, some new items will be added to your `kubeconfig` file such as an `access-token` with an expiration period. For more information on how this process works in Kubernetes please refer to <https://kubernetes.io/docs/reference/access-authn-authz/authentication/#openid-connect-tokens>)
-
-1. Create the cluster baseline settings namespace.
-
-   ```bash
-   # Verify the user you logged in with has the appropriate permissions, should result in a "yes" response.
-   # If you receive "no" to this command, check which user you authenticated as and ensure they are
-   # assigned to the Azure AD Group you designated for cluster admins.
-   kubectl auth can-i create namespace -A
-
-   kubectl create namespace cluster-baseline-settings
-   ```
-
-1. Import cluster management images to your container registry.
-
-   > Public container registries are subject to faults such as outages (no SLA) or request throttling. Interruptions like these can be crippling for a system that needs to pull an image _right now_. To minimize the risks of using public registries, store all applicable container images in a registry that you control, such as the SLA-backed Azure Container Registry.
-
-   ```bash
-   # Get your ACR cluster name
-   export ACR_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.containerRegistryName.value -o tsv)
-
-   # Import cluster management images hosted in public container registries
-   
-   az acr import --source docker.io/library/memcached:1.5.20 -n $ACR_NAME
-   az acr import --source docker.io/fluxcd/flux:1.19.0 -n $ACR_NAME
-   az acr import --source docker.io/weaveworks/kured:1.4.0 -n $ACR_NAME
-   ```
-
-1. Deploy Flux.
-
-   > If you used your own fork of this GitHub repo, update the [`flux.yaml`](./cluster-baseline-settings/flux.yaml) file to include reference to your own repo and change the URL below to point to yours as well. Also, since Flux will begin processing the manifests in [`cluster-baseline-settings/`](./cluster-baseline-settings/) now would be a good time to:
-   >
-   > * update the `<replace-with-an-aad-group-object-id-for-this-cluster-role-binding>` placeholder in [`user-facing-cluster-role-aad-group.yaml`](./cluster-baseline-settings/user-facing-cluster-role-aad-group.yaml) with the Object IDs for the Azure AD group(s) you created for management purposes. If you don't, the manifest will still apply, but AAD integration will not be mapped to your specific AAD configuration.
-   > * Update three `image` manifest references to your container registry instead of the default public container registry. See comment in each file for instructions.
-   >   * update the two `image:` values in [`flux.yaml`](./cluster-baseline-settings/flux.yaml).
-   >   * update the one `image:` values in [`kured-1.4.0-dockerhub.yaml`](./cluster-baseline-settings/kured-1.4.0-dockerhub.yaml).
-
-   :warning: Deploying the flux configuration using the `flux.yaml` file unmodified from this repo will be deploying your cluster to take dependencies on public container registries. This is generally okay for exploratory/testing, but not suitable for production. Before going to production, ensure _all_ image references are from _your_ container registry (as imported in the prior step) or another that you feel confident relying on.
-
-   ```bash
-   kubectl apply -f https://raw.githubusercontent.com/mspnp/aks-secure-baseline/main/cluster-baseline-settings/flux.yaml
-   ```
-
-1. Wait for Flux to be ready before proceeding.
-
-   ```bash
-   kubectl wait --namespace flux-system --for=condition=available deployment/source-controller --timeout=90s
-   ```
-
-Generally speaking, this will be the last time you should need to use `kubectl` for day-to-day configuration operations on this cluster (outside of break-fix situations). Between ARM for Azure Resource definitions and the application of manifests via Flux, all normal configuration activities can be performed without the need to use `kubectl`. You will however see us use it for the upcoming workload deployment. This is because the SDLC component of workloads are not in scope for this reference implementation, as this is focused the infrastructure and baseline configuration.
 
 ### Next step
 

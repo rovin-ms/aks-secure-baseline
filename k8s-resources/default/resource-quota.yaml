@@ -13,6 +13,6 @@ spec:
     persistentvolumeclaims: "0"
     services.loadbalancers: "0"
     services.nodeports: "0"
-    deployment.apps: "0"
+    deployments.apps: "0"
     services: "0"
     pods: "0"

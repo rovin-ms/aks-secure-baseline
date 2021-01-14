@@ -14,6 +14,6 @@ spec:
     persistentvolumeclaims: "0"
     services.loadbalancers: "0"
     services.nodeports: "0"
-    deployment.apps: "2"
+    deployments.apps: "2"
     services: "4"
     pods: "8"

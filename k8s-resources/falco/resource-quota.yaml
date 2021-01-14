@@ -5,13 +5,13 @@ metadata:
   name: default
 spec:
   hard:
-    requests.cpu: "2"
-    requests.memory: 2Gi
+    requests.cpu: "300"
+    requests.memory: 30Gi
     requests.storage: "0"
-    limits.cpu: "2"
-    limits.memory: 2Gi
+    limits.cpu: "300"
+    limits.memory: 300Gi
     count/persistentvolumeclaims: "0"
     count/services.loadbalancers: "0"
-    count/deployments.apps: "10"
-    count/services: "10"
-    count/pods: "10"
+    count/deployments.apps: "100"
+    count/services: "100"
+    count/pods: "100"

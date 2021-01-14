@@ -29,9 +29,13 @@ spec:
       serviceAccountName: aks-falco
       tolerations:
         - effect: NoExecute
-          key: pci-scope=in-scope
+          key: pci-scope
+          operator: Equal
+          value: in-scope
         - effect: NoExecute
-          key: pci-scope=out-of-scope
+          key: pci-scope
+          operator: Equal
+          value: out-of-scope
       containers:
         - name: falco
           image: MYACR.azurecr.io/falcosecurity/falco:0.26.2

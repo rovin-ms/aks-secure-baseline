@@ -41,6 +41,10 @@ spec:
         pci-scope: out-of-scope
       tolerations:
         - effect: NoExecute
-          key: pci-scope=in-scope
+          key: pci-scope
+          operator: Equal
+          value: in-scope
         - effect: NoExecute
-          key: pci-scope=out-of-scope
+          key: pci-scope
+          operator: Equal
+          value: out-of-scope

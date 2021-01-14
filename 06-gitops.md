@@ -180,9 +180,14 @@ Common features offered in solutions like these:
 * Anti-Virus Solutions
 * CVE Detection against running and inbound images
 * Advanced network segmentation
+* Dangerous runtime container activity
 * Workload level CIS benchmark reporting
 
-Your choice of in-cluster tooling to achieve your compliance needs cannot be suggested as a "one-size fits all" in this reference implementation.  However, as a reminder of the need to solve for these, the Flux bootstrapping above deployed a dummy FIM and AV solution. They are not functioning as FIM or AV, simply a visual reminder that your cluster will require you to bring a suitable solution, and you should ensure this tooling is applied as part of your initial bootstrapping process to ensure coverage immediately.
+Your choice of in-cluster tooling to achieve your compliance needs cannot be suggested as a "one-size fits all" in this reference implementation. However, as a reminder of the need to solve for these, the Flux bootstrapping above deployed a dummy FIM and AV solution. They are not functioning as FIM or AV, simply a visual reminder that your cluster will require you to bring a suitable solution.
+
+This reference implementation also installs a default deployment of Falco. It is not configured for alerts, nor tuned to any specific needs. It uses the default rules as they were defined when these files were generated. This is being installed for illustrative purposes, and you're encouraged to evaluate if a product like Falco is relevant to you, and in your final implementation tune its deployment to your needs. This tooling, as most security tooling will be, is highly-privileged.  In this implementation, it's running on all user node pools (in scope and out of scope), but not on the system node pools.
+
+You should ensure all necessary tooling is applied as part of your initial bootstrapping process to ensure coverage immediately.
 
 
 

@@ -10,10 +10,10 @@ resources:
 - serviceaccount.yaml
 - configmap.yaml
 - daemonset.yaml
-- deployment.yaml
+# - deployment.yaml -- event generator app, not deployed by default
 images:
-- name: falcosecurity/event-generator
-  newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/falcosecurity/event-generator
-  newTag: 0.6.0
+#- name: falcosecurity/event-generator
+#  newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/falcosecurity/event-generator
+#  newTag: 0.6.0
 - name: MYACR.azurecr.io/falcosecurity/falco
   newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/falcosecurity/falco

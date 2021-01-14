@@ -170,6 +170,19 @@ This reference implementation isn't going to dive into the nuances of GitOps man
 
 As with any dependency your cluster or workload has, you'll want to minimize or eliminate your reliance on services in which you do not have an SLO or do not meet your observability/compliance requirements. Your cluster's GitOps operators should rely on a git repository that satisfies your reliability & compliance requirements. Consider using a git-mirror approach to bring your cluster dependencies to be "network local" and provide a fault-tolerant syncing mechanism from centralized repositories (like your organization's GitHub private repositories). Following an approach like this will air gap git repositories as an external dependency, at the cost of added complexity.
 
+## Security tooling
+
+While Azure Kubernetes Service, Azure Defender, and Azure Policy offers a secure platform foundation, the inner workings of your cluster are more of a relationship with you and Kubernetes than you and Azure. To that end, most customers are bringing their own security solutions that solve for their specific compliance and organizational requirements within their cluster. They often bring in ISV solutions like StackRox, Sysdig, Prisma Cloud, Falco, to name a few. These solutions offer a suite of added security and reporting controls to your platform.
+
+Common features offered in solutions like these:
+
+* File Integrity Monitoring
+* Anti-Virus Solutions
+* CVE Detection against running and inbound images
+* Advanced network segmentation
+* Workload level CIS benchmark reporting
+
+Your choice of in-cluster tooling to achieve your compliance needs cannot be suggested as a "one-size fits all" in this reference implementation.  However, as a reminder of the need to solve for these, the Flux bootstrapping above deployed a dummy FIM and AV solution. They are not functioning as FIM or AV, simply a visual reminder that your cluster will require you to bring a suitable solution, and you should ensure this tooling is applied as part of your initial bootstrapping process to ensure coverage immediately.
 
 
 

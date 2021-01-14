@@ -18,3 +18,8 @@ spec:
       cpu: 0m
       memory: 0Mi
     type: Container
+  - max:
+      storage: 0Mi
+    min:
+      storage: 0Mi
+    type: PersistentVolumeClaim

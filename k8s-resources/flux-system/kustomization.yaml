@@ -3,6 +3,8 @@ kind: Kustomization
 resources:
 - gotk-components.yaml
 - gotk-sync.yaml
+- limit-range.yaml
+- resource-quote.yaml
 patchesStrategicMerge:
 - gotk-components-patch.yaml
 images:

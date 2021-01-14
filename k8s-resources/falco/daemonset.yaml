@@ -38,7 +38,7 @@ spec:
           value: out-of-scope
       containers:
         - name: falco
-          image: MYACR.azurecr.io/falcosecurity/falco:0.26.2
+          image: falcosecurity/falco:0.26.2
           imagePullPolicy: IfNotPresent
           resources:
             limits:

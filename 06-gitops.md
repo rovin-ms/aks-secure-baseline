@@ -20,26 +20,27 @@ Your github repo will be the source of truth for your cluster's configuration. T
 
 ## Steps
 
-1. Import Flux images into your container registry.
+1. Import Flux and other baseline security/utility images into your container registry.
 
    ```bash
    # Get your Azure Container Registry service name
    ACR_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.containerRegistryName.value -o tsv)
    
-   # [Combined this takes about one minute.]
+   # [Combined this takes about two minutes.]
    az acr import --source ghcr.io/fluxcd/kustomize-controller:v0.6.0 -n $ACR_NAME
    az acr import --source ghcr.io/fluxcd/source-controller:v0.6.0 -n $ACR_NAME
+   az acr import --source docker.io/falcosecurity/falco:0.26.2 -n $ACR_NAME
    ```
 
-1. Update flux to use images from your container registry.
+1. Update kustomization files to use images from your container registry.
 
-   Update the two `newName:` values in `k8s-resources/flux-system/kustomization.yaml` to your container registry instead of the default public container registry. See comment in file for details.
+   Update the two `newName:` values in `k8s-resources/flux-system/kustomization.yaml` to your container registry instead of the default public container registry.
 
    ```bash
-   sed -i "s/REPLACE_ME_WITH_YOUR_ACRNAME/${ACR_NAME}/g" k8s-resources/flux-system/kustomization.yaml
+   grep -lr REPLACE_ME_WITH_YOUR_ACRNAME --include=kustomization.yaml | xargs sed -i "s/REPLACE_ME_WITH_YOUR_ACRNAME/${ACR_NAME}/g"
 
    git add .
-   git commit -m "Update Flux to use images from my ACR instead of public container registries."
+   git commit -m "Update bootstrap deployments to use images from my ACR instead of public container registries."
    ```
 
 1. Update flux to pull from your repo instead of the mspnp repo.

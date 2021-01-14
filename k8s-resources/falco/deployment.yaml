@@ -25,7 +25,7 @@ spec:
       - name: aks-falco-event-generator
         securityContext:
             privileged: false
-        image: falcosecurity/event-generator:latest
+        image: falcosecurity/event-generator:0.6.0
         args:
           - run
           - --loop

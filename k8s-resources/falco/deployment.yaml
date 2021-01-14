@@ -1,0 +1,46 @@
+---
+# Source: falco/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aks-falco-event-generator
+  namespace: falco
+  labels:
+    app: aks-falco-event-generator
+    chart: "falco-1.6.0"
+    release: "aks"
+    heritage: "Helm"
+spec:
+  replicas:  1
+  selector:
+    matchLabels:
+      app: aks-falco-event-generator
+  template:
+    metadata:
+      labels:
+        app: aks-falco-event-generator
+    spec:
+      serviceAccountName: aks-falco
+      containers:
+      - name: aks-falco-event-generator
+        securityContext:
+            privileged: false
+        image: falcosecurity/event-generator:latest
+        args:
+          - run
+          - --loop
+          - ^syscall
+        resources:
+          limits:
+            cpu: 200m
+            memory: 1024Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+      nodeSelector:
+        pci-scope: out-of-scope
+      tolerations:
+        - effect: NoExecute
+          key: pci-scope=in-scope
+        - effect: NoExecute
+          key: pci-scope=out-of-scope

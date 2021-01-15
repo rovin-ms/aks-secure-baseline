@@ -660,6 +660,23 @@
                                     ]
                                 },
                                 {
+                                    "name": "install-open-service-mesh",
+                                    "description": "This is required as the Packer VMs needs to install osm.",
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups', variables('imageBuilderIpGroupName'))]"
+                                    ],
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "github.com",
+                                        "*.s3.amazonaws.com"
+                                    ]
+                                },
+                                {
                                     "name": "install-terraform",
                                     "description": "This is required as the Packer VMs needs to install terraform.",
                                     "sourceIpGroups": [

@@ -150,9 +150,11 @@ Your github repo will be the source of truth for your cluster's configuration. T
 
 Generally speaking, this will be the last time you should need to use direct cluster access tools like `kubectl` for day-to-day configuration operations on this cluster (outside of break-fix situations). Between ARM for Azure Resource definitions and the application of manifests via Flux, all normal configuration activities can be performed without the need to use `kubectl`. You will however see us use it for the upcoming workload deployment. This is because the SDLC component of workloads are not in scope for this reference implementation, as this is focused the infrastructure and baseline configuration.
 
+Typically of the above bootstrapping steps would be codified in a release pipeline so that there would be NO NEED to perform any steps manually. We're performing the steps manually here, like we have with all content so far for illustrative purposes of the steps required. Once you have a safe deployment practice documented (both for internal team reference and for compliance needs), you can then put those actions into an auditable deployment pipeline, that combines deploying the infrastructure with the immediate follow up bootstrapping the cluster. Your workload(s) have a distinct lifecycle from your cluster and as such are managed via another pipeline. But bootstrapping your cluster should be seen as a direct and immediate continuation of the deployment of your cluster.
+
 ## Flux configuration
 
-The Flux implementation in this reference architecture is simplistic. Flux is simply monitoring manifests in the ALL namespaces. It doesn't account for concepts like:
+The Flux implementation in this reference architecture is intentionally simplistic. Flux is configured to simply monitoring manifests in ALL namespaces. It doesn't account for concepts like:
 
 * Built-in [bootstrapping support](https://toolkit.fluxcd.io/guides/installation/#bootstrap).
 * [Multi-tenancy](https://github.com/fluxcd/flux2-multi-tenancy)
@@ -162,7 +164,7 @@ The Flux implementation in this reference architecture is simplistic. Flux is si
 * Flux's [Helm controller](https://github.com/fluxcd/helm-controller) to [manage helm releases](https://toolkit.fluxcd.io/guides/helmreleases/)
 * Flux's [monitoring](https://toolkit.fluxcd.io/guides/monitoring/) features.
 
-This reference implementation isn't going to dive into the nuances of GitOps manifest organization. A lot of that depends on your namespacing, multi-tenant needs, multi-stage (dev, pre-prod, prod) deployment needs, etc. The key takeaway here is to ensure that you're managing your Kubernetes resources in a declarative manner with a reconcile loop, to achieve desired state configuration within your cluster. Ensuring your cluster internally is managed by a single, appropriately-privileged, observable pipelines will aide in compliance. You'll have a git trail that aligns with a log trail from your GitOps toolkit.
+This reference implementation isn't going to dive into the nuances of git manifest organization. A lot of that depends on your namespacing, multi-tenant needs, multi-stage (dev, pre-prod, prod) deployment needs, multi-cluster needs, etc. The key takeaway here is to ensure that you're managing your Kubernetes resources in a declarative manner with a reconcile loop, to achieve desired state configuration within your cluster. Ensuring your cluster internally is managed by a single, appropriately-privileged, observable pipeline will aide in compliance. You'll have a git trail that aligns with a log trail from your GitOps toolkit.
 
 ## Public dependencies
 
@@ -170,7 +172,7 @@ As with any dependency your cluster or workload has, you'll want to minimize or 
 
 ## Security tooling
 
-While Azure Kubernetes Service, Azure Defender, and Azure Policy offers a secure platform foundation; the inner workings of your cluster are more of a relationship with you and Kubernetes than you and Azure. To that end, most customers bring their own security solutions that solve for their specific compliance and organizational requirements within their clusters. They often bring in ISV solutions like Prisma Cloud, StackRox, or Sysdig to name a few. These solutions offer a suite of added security and reporting controls to your platform.
+While Azure Kubernetes Service, Azure Defender, and Azure Policy offers a secure platform foundation; the inner workings of your cluster are more of a relationship with you and Kubernetes than you and Azure. To that end, most customers bring their own security solutions that solve for their specific compliance and organizational requirements within their clusters. They often bring in ISV solutions like [Aqua Security](https://www.aquasec.com/solutions/azure-container-security/), [Prisma Cloud Compute](hhttps://docs.paloaltonetworks.com/prisma/prisma-cloud/prisma-cloud-admin-compute/install/install_kubernetes.html), [StackRox](https://www.stackrox.com/solutions/microsoft-azure-security/), or [Sysdig](https://sysdig.com/partners/microsoft-azure/) to name a few. These solutions offer a suite of added security and reporting controls to your platform, but also come with their own licensing and support agreements.
 
 Common features offered in ISV solutions like these:
 

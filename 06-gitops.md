@@ -183,11 +183,11 @@ Common features offered in ISV solutions like these:
 * Dangerous runtime container activity
 * Workload level CIS benchmark reporting
 
-Your choice of in-cluster tooling to achieve your compliance needs cannot be suggested as a "one-size fits all" in this reference implementation. However, as a reminder of the need to solve for these, the Flux bootstrapping above deployed a dummy FIM and AV solution. They are not functioning as a real FIM or AV, simply a visual reminder that your cluster will require you to bring a suitable solution.
+Your dependency on or choice of in-cluster tooling to achieve your compliance needs cannot be suggested as a "one-size fits all" in this reference implementation. However, as a reminder of the need to solve for these, the Flux bootstrapping above deployed a dummy FIM and AV solution. **They are not functioning as a real FIM or AV**, simply a visual reminder that you will need to bring a suitable solution.
 
-This reference implementation also installs a simplistic deployment of Falco. It is not configured for alerts, nor tuned to any specific needs. It uses the default rules as they were defined when these files were generated. This is also being installed for illustrative purposes, and you're encouraged to evaluate if a solution like Falco is relevant to you. If so, in your final implementation, tune its deployment to your needs. This tooling, as most security tooling will be, is highly-privileged with your cluster. In this implementation, it's running on all user node pools (in-scope and out-of-scope), but not on the system node pools.
+This reference implementation also installs a simplistic deployment of [Falco](https://falco.org/). It is not configured for alerts, nor tuned to any specific needs. It uses the default rules as they were defined when its manifests were generated. This is also being installed for illustrative purposes, and you're encouraged to evaluate if a solution like Falco is relevant to you. If so, in your final implementation, review and tune its deployment to fit your needs. This tooling, as most security tooling will be, is highly-privileged within your cluster. Usually running a DaemonSets with access to the underlying node in a manor that is well beyond any typical workload in your cluster.
 
-You should ensure all necessary tooling is applied as part of your initial bootstrapping process to ensure coverage immediately after cluster creation.
+You should ensure all necessary tooling and related reporting/alerting is applied as part of your initial bootstrapping process to ensure coverage _immediately_ after cluster creation.
 
 ### Next step
 

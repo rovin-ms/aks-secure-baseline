@@ -1,20 +1,19 @@
 # Cluster Baseline Configuration Files (GitOps)
 
-> Note: This is part of the Azure Kubernetes Service (AKS) Baseline Cluster reference implementation. For more information check out the [readme file in the root](../README.md).
+> Note: This is part of the Azure Kubernetes Service (AKS) Baseline Cluster reference implementation for regulated clusters. For more information check out the [readme file in the root](../README.md).
 
-This is the root of the GitOps configuration directory. These Kubernetes object files are expected to be deployed via our in-cluster Flux operator. They are our AKS cluster's baseline configurations. Generally speaking, they are workload agnostic and tend to all cluster-wide configuration concerns.
+This is the root of the GitOps configuration directory. These Kubernetes object files are expected to be deployed via your in-cluster Flux operator. They are our AKS cluster's baseline configuration. Generally speaking, they are workload agnostic and tend to be all cluster-wide configuration concerns.
 
 ## Contents
 
-* Default Namespaces
-* Kubernetes RBAC Role Assignments to Azure AD Principals
-* [Kured](#kured)
-* Ingress Network Policy
-* Flux (self-managing)
-* Azure Monitor Prometheus Scraping
-* Azure KeyVault Secret Store CSI Provider
-* Azure AD Pod Identity
-
+* Flux v2 (self-managing) (see: `flux-system`)
+* "Deny All" policies for the `default` namespace (see: `default`)
+* Sample Falco install (see: `falco`)
+* Cluster-wide RBAC assignments (see: `cluster-rbac.yaml`)
+* Azure Monitor Agent Configuration (see `kube-system`)
+* [Kured](#kured) (see: `cluster-baseline-settings`)
+* Azure KeyVault Secret Store CSI Provider (see: `cluster-baseline-settings`)
+* Azure AD Pod Identity (see: `kube-system`)
 
 ### Kured
 

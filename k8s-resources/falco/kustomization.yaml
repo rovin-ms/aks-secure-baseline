@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: falco
+resources:
+- namespace.yaml
+- limit-range.yaml
+- resource-quota.yaml
+- clusterrole.yaml
+- clusterrolebinding.yaml
+- serviceaccount.yaml
+- configmap.yaml
+- daemonset.yaml
+# - deployment.yaml -- event generator app, not deployed by default
+images:
+#- name: falcosecurity/event-generator
+#  newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/falcosecurity/event-generator
+- name: falcosecurity/falco
+  newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/falcosecurity/falco

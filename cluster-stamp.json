@@ -309,7 +309,7 @@
                 "tenantId": "[subscription().tenantId]",
                 "networkAcls": {
                     "bypass": "AzureServices",
-                    "defaultAction": "Deny",
+                    "defaultAction": "Allow",
                     "ipRules": [],
                     "virtualNetworkRules": []
                 },

@@ -478,6 +478,7 @@
                                             "Microsoft.Insights/activityLogAlerts",
                                             "Microsoft.Insights/metricAlerts",
                                             "Microsoft.Insights/scheduledQueryRules",
+                                            "Microsoft.Insights/workbooks",
                                             "Microsoft.KeyVault/vaults",
                                             "Microsoft.ManagedIdentity/userAssignedIdentities",
                                             "Microsoft.Network/applicationGateways",

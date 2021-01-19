@@ -7,3 +7,4 @@ resources:
 - networkpolicy-denyall.yaml
 - limit-range.yaml
 - rbac.yaml
+- fim-standin.yaml

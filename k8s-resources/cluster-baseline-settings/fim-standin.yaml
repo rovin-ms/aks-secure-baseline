@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fim-standin
+  name: dummy-fim
 spec:
   selector:
     matchLabels:

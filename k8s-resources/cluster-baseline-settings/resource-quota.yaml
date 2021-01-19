@@ -14,5 +14,6 @@ spec:
     count/services.loadbalancers: "0"
     count/services.nodeports: "0"
     count/deployments.apps: "0"
+    count/daemonset.apps: "4"
     count/services: "0"
     count/pods: "28"

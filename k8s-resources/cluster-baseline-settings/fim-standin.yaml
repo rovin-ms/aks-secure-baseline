@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummy-fim
+spec:
+  selector:
+    matchLabels:
+      app: dummy-fim
+  template:
+    metadata:
+      labels:
+        app: dummy-fim
+    spec:
+      containers:
+      - name: dummy-fim
+        image: busybox
+        args: [/bin/sh, -c, 'while true; do echo $(date); sleep 45; done']
+        resources:
+          limits:
+            memory: "28Mi"
+            cpu: "100m"
+          requests:
+            memory: "14Mi"
+            cpu: "50m"
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux
+      tolerations:
+      - effect: NoExecute
+        key: pci-scope
+        operator: Equal
+        value: out-of-scope
+      - effect: NoExecute
+        key: pci-scope
+        operator: Equal
+        value: in-scope

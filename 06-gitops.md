@@ -30,6 +30,7 @@ Your github repo will be the source of truth for your cluster's configuration. T
    az acr import --source ghcr.io/fluxcd/kustomize-controller:v0.6.3 -n $ACR_NAME
    az acr import --source ghcr.io/fluxcd/source-controller:v0.6.3 -n $ACR_NAME
    az acr import --source docker.io/falcosecurity/falco:0.26.2 -n $ACR_NAME
+   az acr import --source docker.io/library/busybox:1.33.0 -n $ACR_NAME
    ```
 
 1. Update kustomization files to use images from your container registry.
@@ -37,6 +38,7 @@ Your github repo will be the source of truth for your cluster's configuration. T
    Update the two `newName:` values in `k8s-resources/flux-system/kustomization.yaml` to your container registry instead of the default public container registry.
 
    ```bash
+   cd k8s-resources
    grep -lr REPLACE_ME_WITH_YOUR_ACRNAME --include=kustomization.yaml | xargs sed -i "s/REPLACE_ME_WITH_YOUR_ACRNAME/${ACR_NAME}/g"
 
    git add .

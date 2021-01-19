@@ -10,5 +10,5 @@ resources:
 - fim-standin.yaml
 images:
 - name: busybox
-  newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/library/busybox
+  newName: acrakslsuoccqde6qa2.azurecr.io/library/busybox
   newTag: 1.33.0

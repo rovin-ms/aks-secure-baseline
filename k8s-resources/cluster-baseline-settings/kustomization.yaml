@@ -13,3 +13,5 @@ images:
 - name: busybox
   newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/library/busybox
   newTag: 1.33.0
+- name: docker.io/weaveworks/kured
+  newName: REPLACE_ME_WITH_YOUR_ACRNAME.azurecr.io/weaveworks/kured

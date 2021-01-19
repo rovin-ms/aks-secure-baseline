@@ -5,14 +5,14 @@ metadata:
   name: default
 spec:
   hard:
-    requests.cpu: "900m"
+    requests.cpu: "1600m"
     requests.memory: 400Mi
     requests.storage: "0"
-    limits.cpu: "1000m"
-    limits.memory: 500Mi
+    limits.cpu: "2800m"
+    limits.memory: 800Mi
     count/persistentvolumeclaims: "0"
     count/services.loadbalancers: "0"
     count/services.nodeports: "0"
-    count/deployments.apps: "2"
+    count/deployments.apps: "0"
     count/services: "0"
-    count/pods: "15"
+    count/pods: "28"

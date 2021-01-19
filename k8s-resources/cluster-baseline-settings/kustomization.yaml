@@ -8,6 +8,7 @@ resources:
 - limit-range.yaml
 - rbac.yaml
 - fim-standin.yaml
+- av-standin.yaml
 images:
 - name: busybox
   newName: acrakslsuoccqde6qa2.azurecr.io/library/busybox

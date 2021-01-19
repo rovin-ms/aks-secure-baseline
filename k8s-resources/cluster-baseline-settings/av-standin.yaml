@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: dummy-fim
+  name: dummy-av
 spec:
   selector:
     matchLabels:
-      app: dummy-fim
+      app: dummy-av
   template:
     metadata:
       labels:
-        app: dummy-fim
+        app: dummy-av
     spec:
       containers:
-      - name: dummy-fim
+      - name: dummy-av
         image: busybox
         args: [/bin/sh, -c, 'while true; do echo $(date); sleep 60; done']
         resources:

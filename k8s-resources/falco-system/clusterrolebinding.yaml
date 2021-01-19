@@ -12,7 +12,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: aks-falco
-    namespace: falco
+    namespace: falco-system
 roleRef:
   kind: ClusterRole
   name: aks-falco

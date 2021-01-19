@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: aks-falco-event-generator
-  namespace: falco
+  namespace: falco-system
   labels:
     app: aks-falco-event-generator
     chart: "falco-1.6.0"

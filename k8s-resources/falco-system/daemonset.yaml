@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: aks-falco
-  namespace: falco
+  namespace: falco-system
   labels:
     app: aks-falco
     chart: "falco-1.6.0"

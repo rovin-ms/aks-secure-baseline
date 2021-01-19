@@ -90,7 +90,7 @@ Your github repo will be the source of truth for your cluster's configuration. T
    az account set -s <subscription name or id>
    ```
 
-1. From your Azure Bastion connection, get your AKS credentials.
+1. From your Azure Bastion connection, get your AKS credentials and set your `kubectl` context to your cluster.
 
    ```bash
    AKS_CLUSTER_NAME=$(az deployment group show --resource-group rg-bu0001a0005 -n cluster-stamp --query properties.outputs.aksClusterName.value -o tsv)
@@ -141,18 +141,20 @@ Your github repo will be the source of truth for your cluster's configuration. T
    kubectl wait --namespace flux-system --for=condition=available deployment/source-controller --timeout=90s
 
    # If you have flux installed you can also inspect using the following commands
+   flux check --components source-controller,kustomize-controller
    flux get sources git
    flux get kustomizations
-   flux check --components source-controller,kustomize-controller
    ```
 
 1. Disconnect from Azure Bastion.
 
 Generally speaking, this will be the last time you should need to use direct cluster access tools like `kubectl` for day-to-day configuration operations on this cluster (outside of break-fix situations). Between ARM for Azure Resource definitions and the application of manifests via Flux, all normal configuration activities can be performed without the need to use `kubectl`. You will however see us use it for the upcoming workload deployment. This is because the SDLC component of workloads are not in scope for this reference implementation, as this is focused the infrastructure and baseline configuration.
 
+Typically of the above bootstrapping steps would be codified in a release pipeline so that there would be NO NEED to perform any steps manually. We're performing the steps manually here, like we have with all content so far for illustrative purposes of the steps required. Once you have a safe deployment practice documented (both for internal team reference and for compliance needs), you can then put those actions into an auditable deployment pipeline, that combines deploying the infrastructure with the immediate follow up bootstrapping the cluster. Your workload(s) have a distinct lifecycle from your cluster and as such are managed via another pipeline. But bootstrapping your cluster should be seen as a direct and immediate continuation of the deployment of your cluster.
+
 ## Flux configuration
 
-The Flux implementation in this reference architecture is simplistic. Flux in this reference implementation is simply monitoring manifests in the ALL namespaces. It doesn't account for concepts like:
+The Flux implementation in this reference architecture is intentionally simplistic. Flux is configured to simply monitoring manifests in ALL namespaces. It doesn't account for concepts like:
 
 * Built-in [bootstrapping support](https://toolkit.fluxcd.io/guides/installation/#bootstrap).
 * [Multi-tenancy](https://github.com/fluxcd/flux2-multi-tenancy)
@@ -162,30 +164,30 @@ The Flux implementation in this reference architecture is simplistic. Flux in th
 * Flux's [Helm controller](https://github.com/fluxcd/helm-controller) to [manage helm releases](https://toolkit.fluxcd.io/guides/helmreleases/)
 * Flux's [monitoring](https://toolkit.fluxcd.io/guides/monitoring/) features.
 
-This reference implementation isn't going to dive into the nuances of GitOps manifest organization. A lot of that depends on your namespacing, multi-tenant needs, multi-stage (dev, pre-prod, prod) deployment needs, etc. The key takeaway here is to ensure that you're managing your Kubernetes resources in a declarative manner with a reconcile loop, to achieve desired state configuration within your cluster. Ensuring your cluster internally is managed by a single, appropriately-privileged, observable pipelines will aide in compliance. You'll have a git trail that aligns with a log trail from your GitOps toolkit.
+This reference implementation isn't going to dive into the nuances of git manifest organization. A lot of that depends on your namespacing, multi-tenant needs, multi-stage (dev, pre-prod, prod) deployment needs, multi-cluster needs, etc. The key takeaway here is to ensure that you're managing your Kubernetes resources in a declarative manner with a reconcile loop, to achieve desired state configuration within your cluster. Ensuring your cluster internally is managed by a single, appropriately-privileged, observable pipeline will aide in compliance. You'll have a git trail that aligns with a log trail from your GitOps toolkit.
 
 ## Public dependencies
 
-As with any dependency your cluster or workload has, you'll want to minimize or eliminate your reliance on services in which you do not have an SLO or do not meet your observability/compliance requirements. Your cluster's GitOps operators should rely on a git repository that satisfies your reliability & compliance requirements. Consider using a git-mirror approach to bring your cluster dependencies to be "network local" and provide a fault-tolerant syncing mechanism from centralized repositories (like your organization's GitHub private repositories). Following an approach like this will air gap git repositories as an external dependency, at the cost of added complexity.
+As with any dependency your cluster or workload has, you'll want to minimize or eliminate your reliance on services in which you do not have an SLO or do not meet your observability/compliance requirements. Your cluster's GitOps operator(s) should rely on a git repository that satisfies your reliability & compliance requirements. Consider using a git-mirror approach to bring your cluster dependencies to be "network local" and provide a fault-tolerant syncing mechanism from centralized working repositories (like your organization's GitHub Enterprise private repositories). Following an approach like this will air gap git repositories as an external dependency, at the cost of added complexity.
 
 ## Security tooling
 
-While Azure Kubernetes Service, Azure Defender, and Azure Policy offers a secure platform foundation, the inner workings of your cluster are more of a relationship with you and Kubernetes than you and Azure. To that end, most customers are bringing their own security solutions that solve for their specific compliance and organizational requirements within their cluster. They often bring in ISV solutions like StackRox, Sysdig, Prisma Cloud, Falco, to name a few. These solutions offer a suite of added security and reporting controls to your platform.
+While Azure Kubernetes Service, Azure Defender, and Azure Policy offers a secure platform foundation; the inner workings of your cluster are more of a relationship with you and Kubernetes than you and Azure. To that end, most customers bring their own security solutions that solve for their specific compliance and organizational requirements within their clusters. They often bring in ISV solutions like [Aqua Security](https://www.aquasec.com/solutions/azure-container-security/), [Prisma Cloud Compute](hhttps://docs.paloaltonetworks.com/prisma/prisma-cloud/prisma-cloud-admin-compute/install/install_kubernetes.html), [StackRox](https://www.stackrox.com/solutions/microsoft-azure-security/), or [Sysdig](https://sysdig.com/partners/microsoft-azure/) to name a few. These solutions offer a suite of added security and reporting controls to your platform, but also come with their own licensing and support agreements.
 
-Common features offered in solutions like these:
+Common features offered in ISV solutions like these:
 
-* File Integrity Monitoring
-* Anti-Virus Solutions
-* CVE Detection against running and inbound images
+* File Integrity Monitoring (FIM)
+* Anti-Virus solutions
+* CVE Detection against admission requests and executing images
 * Advanced network segmentation
 * Dangerous runtime container activity
 * Workload level CIS benchmark reporting
 
-Your choice of in-cluster tooling to achieve your compliance needs cannot be suggested as a "one-size fits all" in this reference implementation. However, as a reminder of the need to solve for these, the Flux bootstrapping above deployed a dummy FIM and AV solution. They are not functioning as FIM or AV, simply a visual reminder that your cluster will require you to bring a suitable solution.
+Your dependency on or choice of in-cluster tooling to achieve your compliance needs cannot be suggested as a "one-size fits all" in this reference implementation. However, as a reminder of the need to solve for these, the Flux bootstrapping above deployed a dummy FIM and AV solution. **They are not functioning as a real FIM or AV**, simply a visual reminder that you will need to bring a suitable solution.
 
-This reference implementation also installs a default deployment of Falco. It is not configured for alerts, nor tuned to any specific needs. It uses the default rules as they were defined when these files were generated. This is being installed for illustrative purposes, and you're encouraged to evaluate if a product like Falco is relevant to you, and in your final implementation tune its deployment to your needs. This tooling, as most security tooling will be, is highly-privileged.  In this implementation, it's running on all user node pools (in scope and out of scope), but not on the system node pools.
+This reference implementation also installs a simplistic deployment of [Falco](https://falco.org/). It is not configured for alerts, nor tuned to any specific needs. It uses the default rules as they were defined when its manifests were generated. This is also being installed for illustrative purposes, and you're encouraged to evaluate if a solution like Falco is relevant to you. If so, in your final implementation, review and tune its deployment to fit your needs. This tooling, as most security tooling will be, is highly-privileged within your cluster. Usually running a DaemonSets with access to the underlying node in a manor that is well beyond any typical workload in your cluster.
 
-You should ensure all necessary tooling is applied as part of your initial bootstrapping process to ensure coverage immediately.
+You should ensure all necessary tooling and related reporting/alerting is applied as part of your initial bootstrapping process to ensure coverage _immediately_ after cluster creation.
 
 ### Next step
 

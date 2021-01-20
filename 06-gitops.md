@@ -42,8 +42,7 @@ Your github repo will be the source of truth for your cluster's configuration. T
    cd k8s-resources
    grep -lr REPLACE_ME_WITH_YOUR_ACRNAME --include=kustomization.yaml | xargs sed -i "s/REPLACE_ME_WITH_YOUR_ACRNAME/${ACR_NAME}/g"
 
-   git add .
-   git commit -m "Update bootstrap deployments to use images from my ACR instead of public container registries."
+   git commit -a -m "Update bootstrap deployments to use images from my ACR instead of public container registries."
    ```
 
 1. Update flux to pull from your repo instead of the mspnp repo.
@@ -51,8 +50,7 @@ Your github repo will be the source of truth for your cluster's configuration. T
    ```bash
    sed -i "s/REPLACE_ME_WITH_YOUR_GITHUBACCOUNTNAME/${GITHUB_ACCOUNT_NAME}/" k8s-resources/flux-system/gotk-sync.yaml
 
-   git add .
-   git commit -m "Update Flux to pull from my fork instead of the upstream Microsoft repo."
+   git commit -a -m "Update Flux to pull from my fork instead of the upstream Microsoft repo."
    ```
 
 1. Push those two changes to your repo.

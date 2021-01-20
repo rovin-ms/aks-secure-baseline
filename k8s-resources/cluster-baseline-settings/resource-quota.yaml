@@ -5,11 +5,11 @@ metadata:
   name: default
 spec:
   hard:
-    requests.cpu: "1600m"
-    requests.memory: 400Mi
+    requests.cpu: 3000m
+    requests.memory: 1000Mi
     requests.storage: "0"
-    limits.cpu: "2800m"
-    limits.memory: 800Mi
+    limits.cpu: 6000m
+    limits.memory: 3000Mi
     count/persistentvolumeclaims: "0"
     count/services.loadbalancers: "0"
     count/services.nodeports: "0"

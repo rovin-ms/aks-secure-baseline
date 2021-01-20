@@ -31,6 +31,7 @@ Your github repo will be the source of truth for your cluster's configuration. T
    az acr import --source ghcr.io/fluxcd/source-controller:v0.6.3 -n $ACR_NAME
    az acr import --source docker.io/falcosecurity/falco:0.26.2 -n $ACR_NAME
    az acr import --source docker.io/library/busybox:1.33.0 -n $ACR_NAME
+   az acr import --source docker.io/weaveworks/kured:1.6.1 -n $ACR_NAME
    ```
 
 1. Update kustomization files to use images from your container registry.
@@ -112,13 +113,13 @@ Your github repo will be the source of truth for your cluster's configuration. T
 
    ```output
    NAME                                  STATUS   ROLES   AGE   VERSION
-   aks-npinscope01-26621167-vmss000000   Ready    agent   20m   v1.19.3
-   aks-npinscope01-26621167-vmss000001   Ready    agent   20m   v1.19.3
-   aks-npooscope01-26621167-vmss000000   Ready    agent   20m   v1.19.3
-   aks-npooscope01-26621167-vmss000001   Ready    agent   20m   v1.19.3
-   aks-npsystem-26621167-vmss000000      Ready    agent   20m   v1.19.3
-   aks-npsystem-26621167-vmss000001      Ready    agent   20m   v1.19.3
-   aks-npsystem-26621167-vmss000002      Ready    agent   20m   v1.19.3
+   aks-npinscope01-26621167-vmss000000   Ready    agent   20m   v1.19.6
+   aks-npinscope01-26621167-vmss000001   Ready    agent   20m   v1.19.6
+   aks-npooscope01-26621167-vmss000000   Ready    agent   20m   v1.19.6
+   aks-npooscope01-26621167-vmss000001   Ready    agent   20m   v1.19.6
+   aks-npsystem-26621167-vmss000000      Ready    agent   20m   v1.19.6
+   aks-npsystem-26621167-vmss000001      Ready    agent   20m   v1.19.6
+   aks-npsystem-26621167-vmss000002      Ready    agent   20m   v1.19.6
    ```
 
 1. From your Azure Bastion connection, bootstrap Flux.

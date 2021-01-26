@@ -55,9 +55,9 @@
     },
     "resources": [
         {
-            "name": "[variables('routeTableName')]",
             "type": "Microsoft.Network/routeTables",
             "apiVersion": "2020-05-01",
+            "name": "[variables('routeTableName')]",
             "location": "[parameters('location')]",
             "comments": "Next hop to regional hub Azure Firewall",
             "properties": {
@@ -73,10 +73,10 @@
                 ]
             }
         },
-        {
-            "name": "[concat('nsg-', variables('clusterVNetName'), '-management-ops')]",
+        {            
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2020-05-01",
+            "name": "[concat('nsg-', variables('clusterVNetName'), '-management-ops')]",
             "location": "[parameters('location')]",
             "comments": "NSG blocking all inbound traffic other than port 22 for jumpbox access.",
             "properties": {
@@ -151,9 +151,9 @@
             },
             "resources": [
                 {
-                    "name": "Microsoft.Insights/toHub",
                     "type": "providers/diagnosticSettings",
                     "apiVersion": "2017-05-01-preview",
+                    "name": "Microsoft.Insights/toHub",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
                     ],
@@ -174,70 +174,46 @@
             ]
         },
         {
-            "name": "[concat('nsg-', variables('clusterVNetName'), '-TODO')]",
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2020-05-01",
+            "name": "[concat('nsg-', variables('clusterVNetName'), '-nodepools')]",
             "location": "[parameters('location')]",
-            "comments": "NSG on the Node Pool and Ingress subnet - TODO FIX THIS.",
+            "comments": "Default NSG on the AKS nodepools. Feel free to constrict further!",
             "properties": {
-                "securityRules": [
-                    {
-                        "name": "AllowFromAnyInBound",
-                        "properties": {
-                            "description": "Everyone in the pool!",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "sourceAddressPrefix": "*",
-                            "destinationPortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 100,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
-                        "name": "DenyFromEveryInBound",
-                        "properties": {
-                            "description": "Everyone out!",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "sourceAddressPrefix": "*",
-                            "destinationPortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Deny",
-                            "priority": 1000,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
-                        "name": "AllowToAnyOutBound",
-                        "properties": {
-                            "description": "Everyone can talk to anything!",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "sourceAddressPrefix": "*",
-                            "destinationPortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 100,
-                            "direction": "Outbound"
-                        }
-                    },
-                    {
-                        "name": "DenyToAllOutBound",
-                        "properties": {
-                            "description": "No more talking",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "sourceAddressPrefix": "*",
-                            "destinationPortRange": "*",
-                            "destinationAddressPrefix": "*",
-                            "access": "Deny",
-                            "priority": 1000,
-                            "direction": "Outbound"
-                        }
+                "securityRules": []
+            },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "name": "Microsoft.Insights/toHub",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-nodepools'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[variables('hubLaWorkspaceResourceId')]",
+                        "logs": [
+                            {
+                                "category": "NetworkSecurityGroupEvent",
+                                "enabled": true
+                            },
+                            {
+                                "category": "NetworkSecurityGroupRuleCounter",
+                                "enabled": true
+                            }
+                        ]
                     }
-                ]
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "name": "[concat('nsg-', variables('clusterVNetName'), '-aksilbs')]",
+            "location": "[parameters('location')]",
+            "comments": "Default NSG on the AKS ILB subnet. Feel free to constrict further!",
+            "properties": {
+                "securityRules": []
             },
             "resources": [
                 {
@@ -245,7 +221,7 @@
                     "type": "providers/diagnosticSettings",
                     "apiVersion": "2017-05-01-preview",
                     "dependsOn": [
-                        "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                        "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-aksilbs'))]"
                     ],
                     "properties": {
                         "workspaceId": "[variables('hubLaWorkspaceResourceId')]",
@@ -366,16 +342,17 @@
             ]
         },
         {
-            "name": "[variables('clusterVNetName')]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2020-05-01",
+            "name": "[variables('clusterVNetName')]",
             "location": "[parameters('location')]",
             "comments": "65,536 (-reserved) IPs available to the workload, split across four subnets for AKS, one for App Gateway, and two for management.",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]",
                 "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-appgw'))]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-nodepools'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-aksilbs'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
             ],
             "properties": {
                 "addressSpace": {
@@ -392,7 +369,7 @@
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
                             },
                             "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-nodepools'))]"
                             },
                             "privateEndpointNetworkPolicies": "Disabled",
                             "privateLinkServiceNetworkPolicies": "Enabled"
@@ -403,7 +380,7 @@
                         "properties": {
                             "addressPrefix": "10.240.12.0/22",
                             "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-nodepools'))]"
                             },
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
@@ -417,7 +394,7 @@
                         "properties": {
                             "addressPrefix": "10.240.16.0/22",
                             "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-nodepools'))]"
                             },
                             "routeTable": {
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
@@ -431,21 +408,21 @@
                         "properties": {
                             "addressPrefix": "10.240.4.0/28",
                             "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-aksilbs'))]"
                             },
-                            "privateEndpointNetworkPolicies": "Enabled",
-                            "privateLinkServiceNetworkPolicies": "Enabled"
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Disabled"
                         }
                     },
                     {
-                        "name": "snet-applicationgateways",
+                        "name": "snet-applicationgateway",
                         "properties": {
                             "addressPrefix": "10.240.4.16/28",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-appgw'))]"
                             },
-                            "privateEndpointNetworkPolicies": "Enabled",
-                            "privateLinkServiceNetworkPolicies": "Enabled"
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Disabled"
                         }
                     },
                     {
@@ -458,7 +435,7 @@
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
                             },
-                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateEndpointNetworkPolicies": "Disabled",
                             "privateLinkServiceNetworkPolicies": "Enabled"
                         }
                     },
@@ -470,9 +447,9 @@
                                 "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
                             },
                             "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-TODO'))]"
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat('nsg-', variables('clusterVNetName'), '-management-ops'))]"
                             },
-                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateEndpointNetworkPolicies": "Disabled",
                             "privateLinkServiceNetworkPolicies": "Enabled"
                         }
                     }
@@ -485,9 +462,9 @@
             },
             "resources": [
                 {
-                    "name": "[variables('toHubPeeringName')]",
                     "type": "virtualNetworkPeerings",
                     "apiVersion": "2020-05-01",
+                    "name": "[variables('toHubPeeringName')]",
                     "comments": "Peer to regional hub.",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
@@ -503,9 +480,9 @@
                     }
                 },
                 {
-                    "name": "Microsoft.Insights/toHub",
                     "type": "providers/diagnosticSettings",
                     "apiVersion": "2017-05-01-preview",
+                    "name": "Microsoft.Insights/toHub",
                     "dependsOn": [
                         "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
                     ],
@@ -522,9 +499,9 @@
             ]
         },
         {
-            "name": "[concat('CreateHubTo', variables('clusterVNetName'), 'Peer')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-06-01",
+            "name": "[concat('CreateHubTo', variables('clusterVNetName'), 'Peer')]",
             "resourceGroup": "[variables('hubRgName')]",
             "comments": "Sub incremental deployment to perform hub-to-spoke peering",
             "dependsOn": [
@@ -537,9 +514,9 @@
                     "contentVersion": "1.0.0.0",
                     "resources": [
                         {
-                            "name": "[concat(variables('hubNetworkName'), '/hub-to-', variables('clusterVNetName'))]",
                             "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
                             "apiVersion": "2020-05-01",
+                            "name": "[concat(variables('hubNetworkName'), '/hub-to-', variables('clusterVNetName'))]",
                             "properties": {
                                 "remoteVirtualNetwork": {
                                     "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('clusterVNetName'))]"
@@ -555,17 +532,17 @@
             }
         },
         {
-            "name": "[variables('acrPrivateDnsZonesName')]",
             "type": "Microsoft.Network/privateDnsZones",
             "apiVersion": "2020-06-01",
+            "name": "[variables('acrPrivateDnsZonesName')]",
             "location": "global",
             "comments": "Enabling Azure Container Registry Private Link on vnet.",
             "properties": {},
             "resources": [
                 {
-                    "name": "[concat('to_', variables('clusterVNetName'))]",
                     "type": "virtualNetworkLinks",
                     "apiVersion": "2020-06-01",
+                    "name": "[concat('to_', variables('clusterVNetName'))]",
                     "location": "global",
                     "comments": "Enabling cluster vnet private zone DNS lookup - used by cluster vnet for direct DNS queries (ones not proxied via the hub).",
                     "dependsOn": [
@@ -580,9 +557,9 @@
                     }
                 },
                 {
-                    "name": "[concat('to_', variables('hubNetworkName'))]",
                     "type": "virtualNetworkLinks",
                     "apiVersion": "2020-06-01",
+                    "name": "[concat('to_', variables('hubNetworkName'))]",
                     "location": "global",
                     "comments": "Enabling hub vnet private zone DNS lookup for ACR - used by azure firewall's dns proxy.",
                     "dependsOn": [
@@ -598,17 +575,17 @@
             ]
         },
         {
-            "name": "[variables('aksPrivateDnsZonesName')]",
             "type": "Microsoft.Network/privateDnsZones",
             "apiVersion": "2020-06-01",
+            "name": "[variables('aksPrivateDnsZonesName')]",
             "location": "global",
             "comments": "Enabling AKS Private Link on vnet.",
             "properties": {},
             "resources": [
                 {
-                    "name": "[concat('to_', variables('hubNetworkName'))]",
                     "type": "virtualNetworkLinks",
                     "apiVersion": "2020-06-01",
+                    "name": "[concat('to_', variables('hubNetworkName'))]",
                     "location": "global",
                     "comments": "Enabling hub vnet private zone DNS lookup for private AKS - used by azure firewall's dns proxy.",
                     "dependsOn": [
@@ -624,17 +601,17 @@
             ]
         },
         {
-            "name": "[variables('akvPrivateDnsZonesName')]",
             "type": "Microsoft.Network/privateDnsZones",
             "apiVersion": "2018-09-01",
+            "name": "[variables('akvPrivateDnsZonesName')]",
             "location": "global",
             "comments": "Enabling Azure Key Vault Private Link support.",
             "properties": {},
             "resources": [
                 {
-                    "name": "[concat('to_', variables('clusterVNetName'))]",
                     "type": "virtualNetworkLinks",
                     "apiVersion": "2020-06-01",
+                    "name": "[concat('to_', variables('clusterVNetName'))]",
                     "location": "global",
                     "comments": "Enabling Azure Key Vault Private Link on cluster vnet.",
                     "dependsOn": [
@@ -649,9 +626,9 @@
                     }
                 },
                 {
-                    "name": "[concat('to_', variables('hubNetworkName'))]",
                     "type": "virtualNetworkLinks",
                     "apiVersion": "2020-06-01",
+                    "name": "[concat('to_', variables('hubNetworkName'))]",
                     "location": "global",
                     "comments": "Enabling hub vnet private zone DNS lookup for ACR - used by azure firewall's dns proxy.",
                     "dependsOn": [
@@ -667,11 +644,11 @@
             ]
         },
         {
-            "name": "[variables('primaryClusterPipName')]",
             "type": "Microsoft.Network/publicIpAddresses",
             "apiVersion": "2020-05-01",
+            "name": "[variables('primaryClusterPipName')]",
             "location": "[parameters('location')]",
-            "comments": "Used as primary entry point for workload. Expected to be assigned to an AAG.",
+            "comments": "Used as primary entry point for workload. Expected to be assigned to an Azure Application Gateway.",
             "sku": {
                 "name": "Standard"
             },
